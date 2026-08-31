@@ -5,8 +5,6 @@ game-outcome model, producing predicted final standings, playoff seeding
 probabilities, and bracket odds — alongside a separate ML model that predicts
 the MVP / DPOY / awards race from player-season stats.
 
-> 🚧 Work in progress — data pipeline and game-outcome model in progress.
-> Live demo link: _(add once deployed)_
 
 ## What this does
 
