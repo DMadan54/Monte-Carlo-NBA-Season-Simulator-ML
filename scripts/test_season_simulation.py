@@ -1,8 +1,11 @@
 """
 Quick test script for the Monte Carlo season simulator.
-It loads the trained game model, grabs the most recent rolling features
-for two teams (default ATL vs BOS), and prints the win probability for
-the home team.
+
+**Purpose:** Verify that the trained game model loads correctly and returns a
+reasonable win‑probability for a single game. It uses the most recent rolling
+features for two teams (default ATL vs BOS). This script is a *lightweight
+sanity check* and does **not** invoke the Monte Carlo simulation loop in
+`season_sim.py`.
 """
 
 import pandas as pd

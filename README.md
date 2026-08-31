@@ -3,10 +3,7 @@
 Simulates the rest of an NBA season thousands of times using a machine-learned
 game-outcome model, producing predicted final standings, playoff seeding
 probabilities, and bracket odds — alongside a separate ML model that predicts
-the MVP / DPOY / awards race from player-season stats.
-
-> 🚧 Work in progress — data pipeline and game-outcome model in progress.
-> Live demo link: _(add once deployed)_
+the MVP/ DPOY/ awards race from player-season stats.
 
 ## What this does
 
@@ -59,11 +56,11 @@ python src/features/build_team_features.py
 
 ## Roadmap
 
-- [x] Data ingestion (team game logs)
-- [x] Feature engineering (rolling team form)
-- [x] Train game-outcome model (LightGBM) — `src/models/game_model.py`
-- [x] Monte Carlo season simulator scaffolding — `src/models/season_sim.py`
-      (needs a real remaining-schedule pull wired in — see TODO in file)
+- [X] Data ingestion (team game logs)
+- [X] Feature engineering (rolling team form)
+- [X] Train game-outcome model (LightGBM) — `src/models/game_model.py`
+- [X] Monte Carlo season simulator scaffolding — `src/models/season_sim.py`
+  (needs a real remaining-schedule pull wired in — see TODO in file)
 - [ ] Pull historical awards voting data
 - [ ] Train awards-race model
 - [ ] Backtest both models against real past seasons
