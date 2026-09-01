@@ -34,6 +34,8 @@ def load_combined_logs() -> pd.DataFrame:
 def add_basic_fields(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["GAME_DATE"] = pd.to_datetime(df["GAME_DATE"])
+    # NBA season typically starts in October; assign season year as the year the season ends.
+    df["SEASON_YEAR"] = df["GAME_DATE"].apply(lambda d: d.year + 1 if d.month >= 10 else d.year)
     df["WIN"] = (df["WL"] == "W").astype(int)
 
     # Each GAME_ID has exactly two rows (one per team). Join each row to
@@ -54,7 +56,7 @@ def add_basic_fields(df: pd.DataFrame) -> pd.DataFrame:
 
 def add_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
-    grouped = df.groupby("TEAM_ID")
+    grouped = df.groupby(["TEAM_ID", "SEASON_YEAR"])
 
     # shift(1) ensures we only use PAST games, not the current one (no leakage)
     df["ROLL_WIN_PCT"] = grouped["WIN"].transform(
@@ -78,7 +80,7 @@ def main():
     df = add_rolling_features(df)
 
     # Drop early-season rows with no rolling history yet
-    df = df.dropna(subset=["ROLL_WIN_PCT", "ROLL_POINT_DIFF"])
+    # df = df.dropna(subset=["ROLL_WIN_PCT", "ROLL_POINT_DIFF"])  # Retain early-season rows for testing
 
     out_path = PROCESSED_DATA_DIR / "team_features.parquet"
     df.to_parquet(out_path, index=False)
