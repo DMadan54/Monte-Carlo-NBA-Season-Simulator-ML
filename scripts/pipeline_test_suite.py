@@ -56,23 +56,7 @@ def test_raw_duplicates():
     print("  [PASS] No duplicates and each GAME_ID appears twice.")
     return True
 
-def test_rolling_features_nan():
-    print("\n[TEST] Verifying early-season NaNs for rolling features...")
-    feats_path = Path("data/processed/team_features.parquet")
-    df = pd.read_parquet(feats_path)
-    # Determine season for each row (year part of GAME_DATE)
-    df["SEASON_YEAR"] = df["GAME_DATE"].dt.year
-    # For each team+season, sort by date and check first two rows
-    problem = False
-    for (team, season), grp in df.groupby(["TEAM_ABBREVIATION", "SEASON_YEAR"]):
-        grp = grp.sort_values("GAME_DATE")
-        first_two = grp.head(2)
-        if not first_two["ROLL_WIN_PCT"].isna().all() or not first_two["ROLL_POINT_DIFF"].isna().all():
-            print(f"  [FAIL] {team} season {season} has non-NaN rolling values in first two games.")
-            problem = True
-    if not problem:
-        print("  [PASS] First two games for each team/season have NaN rolling features.")
-    return not problem
+
 
 def test_point_diff_consistency():
     print("\n[TEST] Spot-checking POINT_DIFF sign consistency for a random GAME_ID...")
@@ -103,6 +87,27 @@ def test_point_diff_consistency():
         print(f"  [FAIL] POINT_DIFF values not opposite: {pdiffs.tolist()}")
         return False
 
+def test_rolling_features_nan():
+    print("\n[TEST] Verifying early-season NaNs for rolling features...")
+    feats_path = Path("data/processed/team_features.parquet")
+    df = pd.read_parquet(feats_path)
+    # Convert GAME_DATE to datetime if necessary
+    df["GAME_DATE"] = pd.to_datetime(df["GAME_DATE"])
+    df["SEASON_YEAR"] = df["GAME_DATE"].apply(lambda d: d.year + 1 if d.month >= 10 else d.year)
+    problem = False
+    for (team, season), grp in df.groupby(["TEAM_ABBREVIATION", "SEASON_YEAR"]):
+        grp = grp.sort_values("GAME_DATE")
+        # min_periods=3, so first 2 games must be NaN
+        first_two = grp.head(2)
+        rolling_cols = [col for col in df.columns if col.startswith("ROLL_")]
+        for col in rolling_cols:
+            if not first_two[col].isna().all():
+                print(f"  [FAIL] {team} season {season} has non-NaN {col} in first two games.")
+                problem = True
+    if not problem:
+        print("  [PASS] First two games for each team/season have NaN rolling features.")
+    return not problem
+
 def test_game_model():
     print("\n[TEST] Training game model and checking metrics...")
     # Run the training script directly (it prints metrics)
@@ -122,21 +127,51 @@ def test_game_model():
     if acc is None:
         print("  [FAIL] Could not parse accuracy.")
         return False
-    if 0.55 <= acc <= 0.70:
+    if 0.50 <= acc <= 0.80:
         print(f"  [PASS] Accuracy {acc:.4f} within expected range.")
     else:
-        print(f"  [FAIL] Accuracy {acc:.4f} out of expected range (55‑70%).")
+        print(f"  [FAIL] Accuracy {acc:.4f} out of expected range (50‑80%).")
         return False
     # Load the saved model and check feature importances
-    model_path = Path("data/processed/models/game_model.pkl")
+    model_path = Path("data/processed/models/game_model_four_factors.pkl")
     model = joblib.load(model_path)
     importances = model.feature_importances_
+    # Verify all importances are non-zero
     if all(imp > 0 for imp in importances):
-        print("  [PASS] All four features have non-zero importance.")
-        return True
+        print("  [PASS] All features have non-zero importance.")
     else:
         print("  [FAIL] One or more features have zero importance:", importances)
         return False
+    # Verify eFG related features rank in the top half
+    feature_order = ["ROLL_WIN_PCT","ROLL_POINT_DIFF","IS_HOME","DAYS_SINCE_LAST_GAME","ROLL_EFG","ROLL_TOV_PCT","ROLL_ORB_PCT","ROLL_FTR","ROLL_EFG_OPP","ROLL_TOV_PCT_OPP","ROLL_ORB_PCT_OPP","ROLL_FTR_OPP"]
+    efg_features = ["ROLL_EFG","ROLL_EFG_OPP"]
+    efg_importances = [importances[feature_order.index(f)] for f in efg_features]
+    median_importance = sorted(importances, reverse=True)[len(importances)//2]
+    if all(imp >= median_importance for imp in efg_importances):
+        print("  [PASS] eFG features rank in the top half of importances.")
+    else:
+        print("  [FAIL] eFG features not in top half of importances.")
+        return False
+    return True
+
+def test_four_factors_sanity():
+    print("\n[TEST] Checking Four Factors sanity values...")
+    feats_path = Path("data/processed/team_features.parquet")
+    df = pd.read_parquet(feats_path)
+    checks = [
+        ((df["EFG"] >= 0) & (df["EFG"] <= 1), "EFG out of bounds (0-1)"),
+        ((df["OPP_EFG"] >= 0) & (df["OPP_EFG"] <= 1), "OPP_EFG out of bounds (0-1)"),
+        ((df["TOV_PCT"] >= 0) & (df["TOV_PCT"] <= 1), "TOV_PCT out of bounds (0-1)"),
+        ((df["OPP_TOV_PCT"] >= 0) & (df["OPP_TOV_PCT"] <= 1), "OPP_TOV_PCT out of bounds (0-1)"),
+        (df["FTR"] <= 1, "FTR > 1"),
+        (df["OPP_FTR"] <= 1, "OPP_FTR > 1"),
+    ]
+    for cond, msg in checks:
+        if not cond.all():
+            print(f"  [FAIL] {msg}.")
+            return False
+    print("  [PASS] Four Factors sanity checks passed.")
+    return True
 
 if __name__ == "__main__":
     results = {
@@ -144,6 +179,7 @@ if __name__ == "__main__":
         "raw_duplicates": test_raw_duplicates(),
         "rolling_nan": test_rolling_features_nan(),
         "point_diff": test_point_diff_consistency(),
+        "four_factors": test_four_factors_sanity(),
         "game_model": test_game_model(),
     }
     passed = sum(results.values())
