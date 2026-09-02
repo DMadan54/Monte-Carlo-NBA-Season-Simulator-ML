@@ -18,6 +18,10 @@ import numpy as np
 from pathlib import Path
 import joblib
 import sys
+# Ensure project root is on PYTHONPATH for relative imports
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.append(str(PROJECT_ROOT))
 
 # Helper to run a command and capture output
 def run_cmd(cmd: str):
@@ -127,6 +131,37 @@ def test_game_model():
     if acc is None:
         print("  [FAIL] Could not parse accuracy.")
         return False
+    # Baseline comparison
+    baseline_path = Path("data/processed/models/game_model.pkl")
+    baseline_acc = None
+    if baseline_path.exists():
+        # Load baseline model and evaluate on same test set used by game_model.py
+        import joblib
+        import importlib, importlib.util, pathlib
+        # Dynamically load game_model module
+        game_model_path = PROJECT_ROOT / "src" / "models" / "game_model.py"
+        spec = importlib.util.spec_from_file_location("game_model", str(game_model_path))
+        game_model = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(game_model)
+        load_features = game_model.load_features
+        FEATURES = game_model.FEATURES
+        TARGET = game_model.TARGET
+        df = load_features()
+        df = df.dropna(subset=FEATURES + [TARGET])
+        X = df[FEATURES]
+        y = df[TARGET]
+        from sklearn.model_selection import train_test_split
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+        baseline_model = joblib.load(baseline_path)
+        baseline_features = ["ROLL_WIN_PCT", "ROLL_POINT_DIFF", "IS_HOME", "DAYS_SINCE_LAST_GAME"]
+        baseline_X_test = X_test[baseline_features]
+        baseline_preds = baseline_model.predict(baseline_X_test)
+        baseline_acc = (baseline_preds == y_test).mean()
+        print(f"  [INFO] Baseline model accuracy: {baseline_acc:.4f}")
+    # Verify new model accuracy meets expectations and does not regress
+    if baseline_acc is not None and acc < baseline_acc:
+        print(f"  [FAIL] New model accuracy {acc:.4f} is lower than baseline {baseline_acc:.4f}.")
+        return False
     if 0.50 <= acc <= 0.80:
         print(f"  [PASS] Accuracy {acc:.4f} within expected range.")
     else:
@@ -140,10 +175,10 @@ def test_game_model():
     if all(imp > 0 for imp in importances):
         print("  [PASS] All features have non-zero importance.")
     else:
-        print("  [FAIL] One or more features have zero importance:", importances)
+        print(f"  [FAIL] One or more features have zero importance:", importances)
         return False
     # Verify eFG related features rank in the top half
-    feature_order = ["ROLL_WIN_PCT","ROLL_POINT_DIFF","IS_HOME","DAYS_SINCE_LAST_GAME","ROLL_EFG","ROLL_TOV_PCT","ROLL_ORB_PCT","ROLL_FTR","ROLL_EFG_OPP","ROLL_TOV_PCT_OPP","ROLL_ORB_PCT_OPP","ROLL_FTR_OPP"]
+    feature_order = ["ROLL_WIN_PCT","ROLL_POINT_DIFF","IS_HOME","DAYS_SINCE_LAST_GAME","ROLL_EFG","ROLL_TOV_PCT","ROLL_ORB_PCT","ROLL_FTR","ROLL_EFG_OPP","ROLL_TOV_PCT_OPP","ROLL_ORB_PCT_OPP","ROLL_FTR_OPP","ROLL_EFG_DIFF"]
     efg_features = ["ROLL_EFG","ROLL_EFG_OPP"]
     efg_importances = [importances[feature_order.index(f)] for f in efg_features]
     median_importance = sorted(importances, reverse=True)[len(importances)//2]
