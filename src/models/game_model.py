@@ -17,7 +17,7 @@ from sklearn.model_selection import train_test_split
 PROCESSED_DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "processed"
 MODELS_DIR = Path(__file__).resolve().parents[2] / "data" / "processed" / "models"
 
-FEATURES = ["ROLL_WIN_PCT", "ROLL_POINT_DIFF", "IS_HOME", "DAYS_SINCE_LAST_GAME"]
+FEATURES = ["ROLL_WIN_PCT", "ROLL_POINT_DIFF", "IS_HOME", "DAYS_SINCE_LAST_GAME", "ROLL_EFG", "ROLL_TOV_PCT", "ROLL_ORB_PCT", "ROLL_FTR", "ROLL_EFG_OPP", "ROLL_TOV_PCT_OPP", "ROLL_ORB_PCT_OPP", "ROLL_FTR_OPP", "ROLL_EFG_DIFF"]
 TARGET = "WIN"
 
 
@@ -48,9 +48,9 @@ def main():
     )
 
     model = lgb.LGBMClassifier(
-        n_estimators=300,
+        n_estimators=500,
         learning_rate=0.05,
-        max_depth=4,
+        max_depth=6,
         random_state=42,
     )
     model.fit(X_train, y_train)
@@ -71,7 +71,7 @@ def main():
     ):
         print(f"  {feat}: {imp}")
 
-    model_path = MODELS_DIR / "game_model.pkl"
+    model_path = MODELS_DIR / "game_model_four_factors.pkl"
     joblib.dump(model, model_path)
     print(f"\nSaved model to {model_path}")
 
