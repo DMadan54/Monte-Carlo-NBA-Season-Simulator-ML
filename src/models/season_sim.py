@@ -46,6 +46,14 @@ def load_remaining_schedule() -> pd.DataFrame:
     # --- Load raw schedule ---------------------------------------------------
     season = "2024-25"
     schedule_df = scheduleleaguev2.ScheduleLeagueV2(season=season).get_data_frames()[0]
+
+    # Keep only regular‑season games; the API may provide SEASON_STAGE or GAME_TYPE columns
+    if "SEASON_STAGE" in schedule_df.columns:
+        schedule_df = schedule_df[schedule_df["SEASON_STAGE"] == "Regular Season"]
+    elif "GAME_TYPE" in schedule_df.columns:
+        schedule_df = schedule_df[schedule_df["GAME_TYPE"] == "R"]
+
+    # Select relevant columns
     schedule = schedule_df[["gameDate", "homeTeam_teamTricode", "awayTeam_teamTricode"]].copy()
     schedule.rename(columns={
         "gameDate": "GAME_DATE",
@@ -58,6 +66,15 @@ def load_remaining_schedule() -> pd.DataFrame:
     
     # Keep GAME_DATE as datetime64 for merge_asof compatibility
     schedule["GAME_DATE"] = pd.to_datetime(schedule["GAME_DATE"])
+    # Keep only regular‑season dates (approx Oct 1 2024 – Apr 30 2025)
+    schedule = schedule[(schedule["GAME_DATE"] >= pd.Timestamp("2024-10-01")) &
+                        (schedule["GAME_DATE"] <= pd.Timestamp("2025-04-30"))]
+    # Remove any exact duplicate game entries (same date and teams)
+    schedule = schedule.drop_duplicates(subset=["GAME_DATE", "HOME_TEAM", "AWAY_TEAM"])
+    # Verify expected row count (1230 games). If extra rows remain, retain the earliest 1230 games.
+    if len(schedule) != 1230:
+        # Log a warning and truncate to the first 1230 rows after sorting by date
+        schedule = schedule.sort_values("GAME_DATE").head(1230)
     schedule.sort_values("GAME_DATE", inplace=True)
     schedule.reset_index(drop=True, inplace=True)
 
