@@ -48,10 +48,14 @@ def main():
     )
 
     model = lgb.LGBMClassifier(
-        n_estimators=500,
-        learning_rate=0.05,
-        max_depth=6,
+        n_estimators=400,
+        learning_rate=0.03,
+        max_depth=4,
+        num_leaves=15,
+        subsample=0.8,
+        colsample_bytree=0.8,
         random_state=42,
+        verbose=-1,
     )
     model.fit(X_train, y_train)
 

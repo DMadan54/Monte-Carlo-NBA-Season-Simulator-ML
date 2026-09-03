@@ -42,15 +42,12 @@ def add_basic_fields(df: pd.DataFrame) -> pd.DataFrame:
     # Each GAME_ID has exactly two rows (one per team). Join each row to
     # its opponent's row on GAME_ID to get the opponent's score and stats, then
     # compute point differential and Four Factors.
-    # Merge opponent score
-    opponent_scores = df[["GAME_ID", "TEAM_ID", "PTS"]].rename(
-        columns={"TEAM_ID": "OPP_TEAM_ID", "PTS": "OPP_PTS"}
-    )
-    df = df.merge(opponent_scores, on="GAME_ID")
-    # Merge opponent raw stats for factor calculations
-    opp_stats = df[["GAME_ID", "TEAM_ID", "FGM", "FGA", "FG3M", "TOV", "OREB", "FTM", "FTA"]].rename(
+    opp_stats = df[[
+        "GAME_ID", "TEAM_ID", "PTS", "FGM", "FGA", "FG3M", "TOV", "OREB", "FTM", "FTA"
+    ]].rename(
         columns={
             "TEAM_ID": "OPP_TEAM_ID",
+            "PTS": "OPP_PTS",
             "FGM": "OPP_FGM",
             "FGA": "OPP_FGA",
             "FG3M": "OPP_FG3M",
@@ -60,8 +57,8 @@ def add_basic_fields(df: pd.DataFrame) -> pd.DataFrame:
             "FTA": "OPP_FTA",
         }
     )
-    df = df.merge(opp_stats, on=["GAME_ID", "OPP_TEAM_ID"], how="left")
-    df = df[df["TEAM_ID"] != df["OPP_TEAM_ID"]]  # drop self-join rows
+    df = df.merge(opp_stats, on="GAME_ID")
+    df = df[df["TEAM_ID"] != df["OPP_TEAM_ID"]].copy()  # drop self-join rows
     # Point differential
     df["POINT_DIFF"] = df["PTS"] - df["OPP_PTS"]
     # Four Factors for team offense
