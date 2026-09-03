@@ -34,20 +34,72 @@ def load_model():
 
 def load_remaining_schedule() -> pd.DataFrame:
     """
-    Placeholder loader for the remaining schedule.
-
-    TODO: replace with a real pull of remaining games for the season
-    (nba_api's `scheduleleaguev2` endpoint or similar), joined with each
-    team's current rolling form features so each row has the FEATURES
-    columns ready to feed into the model.
-
-    Expected columns: GAME_DATE, HOME_TEAM, AWAY_TEAM, plus the FEATURES
-    columns computed from each team's current rolling form.
+    Load the full 2024‑25 NBA season schedule and attach each team's pre‑game features
+    (the rolling Four‑Factors) as they existed immediately before the game.
+    Returns a DataFrame with schedule columns plus all model feature columns.
     """
-    raise NotImplementedError(
-        "Wire this up to a real schedule pull once you're ready — "
-        "for now this is a placeholder so the rest of the pipeline runs."
+    from nba_api.stats.endpoints import scheduleleaguev2
+    import pandas as pd
+    from datetime import datetime
+
+    # --- Load raw schedule ---------------------------------------------------
+    season = "2024-25"
+    schedule_df = scheduleleaguev2.ScheduleLeagueV2(season=season).get_data_frames()[0]
+    schedule = schedule_df[["gameDate", "homeTeam_teamTricode", "awayTeam_teamTricode"]].copy()
+    schedule.rename(columns={
+        "gameDate": "GAME_DATE",
+        "homeTeam_teamTricode": "HOME_TEAM",
+        "awayTeam_teamTricode": "AWAY_TEAM",
+    }, inplace=True)
+    # Keep GAME_DATE as datetime64 for merge_asof compatibility
+    schedule["GAME_DATE"] = pd.to_datetime(schedule["GAME_DATE"])
+    schedule.sort_values("GAME_DATE", inplace=True)
+    schedule.reset_index(drop=True, inplace=True)
+
+    # --- Load pre‑computed team rolling features ----------------------------
+    features_path = PROCESSED_DATA_DIR / "team_features.parquet"
+    if not features_path.exists():
+        raise FileNotFoundError(
+            f"{features_path} not found – run src/features/build_team_features.py first."
+        )
+    team_feat = pd.read_parquet(features_path)
+    # Ensure date column is a Python date for merge_asof compatibility
+    team_feat["GAME_DATE"] = pd.to_datetime(team_feat["GAME_DATE"]).dt.date
+    team_feat.sort_values("GAME_DATE", inplace=True)
+
+    # --- Attach the most recent pre‑game feature row for each HOME_TEAM --------
+    # merge_asof performs a left‑join on the nearest prior GAME_DATE per team
+    schedule_with_feat = pd.merge_asof(
+        schedule,
+        team_feat,
+        left_on="GAME_DATE",
+        right_on="GAME_DATE",
+        left_by="HOME_TEAM",
+        right_by="TEAM_ABBREVIATION",
+        direction="backward",
+        suffixes=("", "_home"),
     )
+
+    # Drop any rows where the required model features are still missing (e.g.,
+    # the very first games of a season where no history exists). The model
+    # expects the FEATURE columns defined in src/models/game_model.py.
+    required_cols = [
+        "ROLL_WIN_PCT",
+        "ROLL_POINT_DIFF",
+        "IS_HOME",
+        "DAYS_SINCE_LAST_GAME",
+        "ROLL_EFG",
+        "ROLL_TOV_PCT",
+        "ROLL_ORB_PCT",
+        "ROLL_FTR",
+        "ROLL_EFG_OPP",
+        "ROLL_TOV_PCT_OPP",
+        "ROLL_ORB_PCT_OPP",
+        "ROLL_FTR_OPP",
+        "ROLL_EFG_DIFF",
+    ]
+    schedule_with_feat = schedule_with_feat.dropna(subset=required_cols)
+    return schedule_with_feat
 
 
 def simulate_one_season(schedule: pd.DataFrame, model, current_wins: dict) -> dict:
