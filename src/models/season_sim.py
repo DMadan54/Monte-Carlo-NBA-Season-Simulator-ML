@@ -39,6 +39,7 @@ def load_remaining_schedule() -> pd.DataFrame:
     Returns a DataFrame with schedule columns plus all model feature columns.
     """
     from nba_api.stats.endpoints import scheduleleaguev2
+    from nba_api.stats.static import teams  # import list of NBA teams
     import pandas as pd
     from datetime import datetime
 
@@ -51,6 +52,10 @@ def load_remaining_schedule() -> pd.DataFrame:
         "homeTeam_teamTricode": "HOME_TEAM",
         "awayTeam_teamTricode": "AWAY_TEAM",
     }, inplace=True)
+    # Filter to NBA teams – remove G‑League, All‑Star, etc.
+    valid_abbr = {team["abbreviation"] for team in teams.get_teams()}
+    schedule = schedule[schedule["HOME_TEAM"].isin(valid_abbr) & schedule["AWAY_TEAM"].isin(valid_abbr)]
+    
     # Keep GAME_DATE as datetime64 for merge_asof compatibility
     schedule["GAME_DATE"] = pd.to_datetime(schedule["GAME_DATE"])
     schedule.sort_values("GAME_DATE", inplace=True)
@@ -63,6 +68,8 @@ def load_remaining_schedule() -> pd.DataFrame:
             f"{features_path} not found – run src/features/build_team_features.py first."
         )
     team_feat = pd.read_parquet(features_path)
+    # Filter team features to NBA teams only
+    team_feat = team_feat[team_feat["TEAM_ABBREVIATION"].isin(valid_abbr)]
     # Ensure date column is datetime64[ns] for merge_asof compatibility
     team_feat["GAME_DATE"] = pd.to_datetime(team_feat["GAME_DATE"])
     team_feat.sort_values("GAME_DATE", inplace=True)
