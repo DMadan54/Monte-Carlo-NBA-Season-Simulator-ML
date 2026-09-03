@@ -63,8 +63,8 @@ def load_remaining_schedule() -> pd.DataFrame:
             f"{features_path} not found – run src/features/build_team_features.py first."
         )
     team_feat = pd.read_parquet(features_path)
-    # Ensure date column is a Python date for merge_asof compatibility
-    team_feat["GAME_DATE"] = pd.to_datetime(team_feat["GAME_DATE"]).dt.date
+    # Ensure date column is datetime64[ns] for merge_asof compatibility
+    team_feat["GAME_DATE"] = pd.to_datetime(team_feat["GAME_DATE"])
     team_feat.sort_values("GAME_DATE", inplace=True)
 
     # --- Attach the most recent pre‑game feature row for each HOME_TEAM --------
