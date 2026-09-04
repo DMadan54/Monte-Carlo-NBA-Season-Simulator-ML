@@ -115,12 +115,23 @@ def add_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
     df["ROLL_TOV_PCT_DIFF"] = df["ROLL_TOV_PCT"] - df["ROLL_TOV_PCT_OPP"]
     df["ROLL_ORB_PCT_DIFF"] = df["ROLL_ORB_PCT"] - df["ROLL_ORB_PCT_OPP"]
     df["ROLL_FTR_DIFF"] = df["ROLL_FTR"] - df["ROLL_FTR_OPP"]
+
+    # Long-horizon team-strength features (persistent signals)
+    # 1. Season-to-date cumulative net rating (expanding window)
+    df["SEASON_POINT_DIFF"] = grouped["POINT_DIFF"].transform(
+        lambda x: x.shift(1).expanding(min_periods=3).mean()
+    )
+    # 2. Slower-decaying exponential moving average (half-life = 20 games)
+    df["EMA_POINT_DIFF"] = grouped["POINT_DIFF"].transform(
+        lambda x: x.shift(1).ewm(halflife=20, min_periods=3).mean()
+    )
+
     # Ensure first two games of each season have NaN rolling features to avoid leakage
     # Determine game order within each team-season group
     order = grouped["GAME_DATE"].rank(method="first")
     mask = order <= 2
     for col in df.columns:
-        if col.startswith("ROLL_"):
+        if col.startswith("ROLL_") or col in ["SEASON_POINT_DIFF", "EMA_POINT_DIFF"]:
             df.loc[mask, col] = np.nan
     return df
 

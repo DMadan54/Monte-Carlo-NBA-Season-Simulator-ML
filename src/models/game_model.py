@@ -17,7 +17,23 @@ from sklearn.model_selection import train_test_split
 PROCESSED_DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "processed"
 MODELS_DIR = Path(__file__).resolve().parents[2] / "data" / "processed" / "models"
 
-FEATURES = ["ROLL_WIN_PCT", "ROLL_POINT_DIFF", "IS_HOME", "DAYS_SINCE_LAST_GAME", "ROLL_EFG", "ROLL_TOV_PCT", "ROLL_ORB_PCT", "ROLL_FTR", "ROLL_EFG_OPP", "ROLL_TOV_PCT_OPP", "ROLL_ORB_PCT_OPP", "ROLL_FTR_OPP", "ROLL_EFG_DIFF"]
+FEATURES = [
+    "ROLL_WIN_PCT",
+    "ROLL_POINT_DIFF",
+    "IS_HOME",
+    "DAYS_SINCE_LAST_GAME",
+    "ROLL_EFG",
+    "ROLL_TOV_PCT",
+    "ROLL_ORB_PCT",
+    "ROLL_FTR",
+    "ROLL_EFG_OPP",
+    "ROLL_TOV_PCT_OPP",
+    "ROLL_ORB_PCT_OPP",
+    "ROLL_FTR_OPP",
+    "ROLL_EFG_DIFF",
+    "SEASON_POINT_DIFF",
+    "EMA_POINT_DIFF",
+]
 TARGET = "WIN"
 
 

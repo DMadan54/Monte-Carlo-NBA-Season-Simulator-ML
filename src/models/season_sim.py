@@ -36,6 +36,8 @@ FEATURES = [
     "ROLL_ORB_PCT_OPP",
     "ROLL_FTR_OPP",
     "ROLL_EFG_DIFF",
+    "SEASON_POINT_DIFF",
+    "EMA_POINT_DIFF",
 ]
 
 # Standard and known shortened season game counts
