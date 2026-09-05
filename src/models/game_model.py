@@ -33,6 +33,8 @@ FEATURES = [
     "ROLL_EFG_DIFF",
     "SEASON_POINT_DIFF",
     "EMA_POINT_DIFF",
+    "ELO_RATING",
+    "OPP_ELO_RATING",
 ]
 TARGET = "WIN"
 

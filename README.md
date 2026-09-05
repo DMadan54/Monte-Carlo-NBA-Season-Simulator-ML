@@ -52,6 +52,10 @@ python src/ingest/pull_team_game_logs.py --start_season 2018 --end_season 2024
 
 # Build the rolling-feature table used to train the game model
 python src/features/build_team_features.py
+
+# Flag (but do not remove) post-elimination games for backtest review.
+# Add --fetch-player-logs to enrich flags with high-minute player absences.
+python src/backtest/flag_tanked_games.py
 ```
 
 ## Roadmap

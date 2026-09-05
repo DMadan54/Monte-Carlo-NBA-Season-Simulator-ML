@@ -178,7 +178,12 @@ def test_game_model():
         print(f"  [FAIL] One or more features have zero importance:", importances)
         return False
     # Verify eFG related features rank in the top half
-    feature_order = ["ROLL_WIN_PCT","ROLL_POINT_DIFF","IS_HOME","DAYS_SINCE_LAST_GAME","ROLL_EFG","ROLL_TOV_PCT","ROLL_ORB_PCT","ROLL_FTR","ROLL_EFG_OPP","ROLL_TOV_PCT_OPP","ROLL_ORB_PCT_OPP","ROLL_FTR_OPP","ROLL_EFG_DIFF"]
+    feature_order = [
+        "ROLL_WIN_PCT", "ROLL_POINT_DIFF", "IS_HOME", "DAYS_SINCE_LAST_GAME",
+        "ROLL_EFG", "ROLL_TOV_PCT", "ROLL_ORB_PCT", "ROLL_FTR",
+        "ROLL_EFG_OPP", "ROLL_TOV_PCT_OPP", "ROLL_ORB_PCT_OPP", "ROLL_FTR_OPP",
+        "ROLL_EFG_DIFF", "SEASON_POINT_DIFF", "EMA_POINT_DIFF"
+    ]
     efg_features = ["ROLL_EFG","ROLL_EFG_OPP"]
     efg_importances = [importances[feature_order.index(f)] for f in efg_features]
     median_importance = sorted(importances, reverse=True)[len(importances)//2]

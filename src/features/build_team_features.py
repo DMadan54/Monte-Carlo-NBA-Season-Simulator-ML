@@ -133,6 +133,66 @@ def add_rolling_features(df: pd.DataFrame) -> pd.DataFrame:
     for col in df.columns:
         if col.startswith("ROLL_") or col in ["SEASON_POINT_DIFF", "EMA_POINT_DIFF"]:
             df.loc[mask, col] = np.nan
+
+    # Compute Elo ratings (persistent, not windowed)
+    df = compute_elo_ratings(df)
+    return df
+
+
+def compute_elo_ratings(df: pd.DataFrame) -> pd.DataFrame:
+    """Compute simple Elo ratings for each team across the full history.
+
+    The rating is updated after every game using a K‑factor, a margin‑of‑victory multiplier,
+    and a home‑court advantage constant. This produces persistent ratings that do not reset
+    each season, directly addressing the extremes‑compression issue.
+    """
+    df = df.copy()
+    # Parameters (can be tuned later)
+    INITIAL_RATING = 1500.0
+    K = 20.0
+    HOME_ADV = 100.0  # added to home team's effective rating when computing win prob
+
+    # Helper to compute margin multiplier (greater for larger point differentials)
+    def margin_multiplier(point_diff):
+        # Use a simple log‑based multiplier; ensure at least 1.0
+        return max(1.0, np.log(abs(point_diff) + 1.0))
+
+    # Dictionaries to hold current ratings per team
+    ratings = {}
+    # Store computed ratings
+    elo_ratings = []
+    opp_elo_ratings = []
+
+    # Ensure deterministic order: sort by date then by team id
+    df = df.sort_values(["GAME_DATE", "TEAM_ID"]).reset_index(drop=True)
+    for idx, row in df.iterrows():
+        team = row["TEAM_ID"]
+        opp = row["OPP_TEAM_ID"]
+        home = row["IS_HOME"] == 1
+        actual = row["WIN"]  # 1 if team won, else 0
+        point_diff = row["POINT_DIFF"]
+
+        # Get current ratings (default initial)
+        team_rating = ratings.get(team, INITIAL_RATING)
+        opp_rating = ratings.get(opp, INITIAL_RATING)
+
+        # Effective ratings for win‑probability calculation
+        team_eff = team_rating + (HOME_ADV if home else 0)
+        opp_eff = opp_rating + (HOME_ADV if not home else 0)
+        expected = 1.0 / (1.0 + 10 ** ((opp_eff - team_eff) / 400.0))
+
+        mult = margin_multiplier(point_diff)
+        delta = K * (actual - expected) * mult
+
+        # Update ratings
+        ratings[team] = team_rating + delta
+        ratings[opp] = opp_rating - delta  # opponent gets opposite adjustment
+
+        elo_ratings.append(team_rating)  # rating before the game
+        opp_elo_ratings.append(opp_rating)
+
+    df["ELO_RATING"] = elo_ratings
+    df["OPP_ELO_RATING"] = opp_elo_ratings
     return df
 
 
@@ -150,7 +210,7 @@ def main():
     df.to_parquet(out_path, index=False)
     print(f"Wrote {len(df)} feature rows to {out_path}")
     print(df[["TEAM_ABBREVIATION", "GAME_DATE", "ROLL_WIN_PCT",
-              "ROLL_POINT_DIFF", "IS_HOME", "WIN"]].head())
+              "ROLL_POINT_DIFF", "IS_HOME", "WIN", "ELO_RATING"]].head())
 
 
 if __name__ == "__main__":
