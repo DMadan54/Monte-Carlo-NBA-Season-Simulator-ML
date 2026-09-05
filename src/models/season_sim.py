@@ -66,7 +66,7 @@ def season_to_year(season: str) -> int:
     return start_year + 1
 
 
-def load_season_schedule(season: str = "2024-25") -> pd.DataFrame:
+def load_season_schedule(season: str = "2024-25", features: Optional[List[str]] = None) -> pd.DataFrame:
     """
     Load the regular-season schedule for any given season and attach each team's
     pre-game rolling features strictly computed from games within that season.
@@ -106,7 +106,11 @@ def load_season_schedule(season: str = "2024-25") -> pd.DataFrame:
     # Backfill early-season missing rolling features within the same team & season
     # so that all regular season games can be simulated.
     season_feats.sort_values(["TEAM_ABBREVIATION", "GAME_DATE"], inplace=True)
-    roll_cols = [c for c in FEATURES if c != "IS_HOME"]
+    model_features = features or FEATURES
+    missing_features = set(model_features) - set(season_feats.columns)
+    if missing_features:
+        raise ValueError(f"Schedule features missing for {season}: {sorted(missing_features)}")
+    roll_cols = [c for c in model_features if c != "IS_HOME"]
     season_feats[roll_cols] = (
         season_feats.groupby("TEAM_ABBREVIATION")[roll_cols].bfill().ffill()
     )
@@ -156,7 +160,8 @@ def simulate_one_season(
         rng = np.random.default_rng()
 
     # Model inference
-    win_probs = model.predict_proba(schedule[FEATURES])[:, 1]
+    model_features = list(getattr(model, "feature_name_", FEATURES))
+    win_probs = model.predict_proba(schedule[model_features])[:, 1]
     random_draws = rng.random(len(schedule))
 
     for i, row in enumerate(schedule.itertuples()):
@@ -172,15 +177,34 @@ def simulate_one_season(
 def run_simulation_with_schedule(
     schedule: pd.DataFrame, model, n_sims: int = 5000, current_wins: Optional[dict] = None, seed: Optional[int] = 42
 ) -> pd.DataFrame:
-    """Run Monte Carlo simulation on a provided schedule DataFrame."""
+    """Run Monte Carlo simulation on a provided schedule DataFrame.
+
+    Probabilities are invariant across trials, so compute them once and draw
+    all simulated outcomes in a matrix. This keeps historical backtests fast
+    without changing the independent Bernoulli model for each game.
+    """
     rng = np.random.default_rng(seed) if seed is not None else np.random.default_rng()
 
-    results = []
-    for _ in range(n_sims):
-        final_wins = simulate_one_season(schedule, model, current_wins, rng=rng)
-        results.append(final_wins)
+    model_features = list(getattr(model, "feature_name_", FEATURES))
+    win_probs = model.predict_proba(schedule[model_features])[:, 1]
+    teams = pd.Index(pd.concat([schedule["HOME_TEAM"], schedule["AWAY_TEAM"]]).unique())
+    team_index = {team: index for index, team in enumerate(teams)}
+    home_indices = schedule["HOME_TEAM"].map(team_index).to_numpy()
+    away_indices = schedule["AWAY_TEAM"].map(team_index).to_numpy()
 
-    results_df = pd.DataFrame(results).fillna(0)
+    home_wins = rng.random((n_sims, len(schedule))) < win_probs
+    wins_matrix = np.zeros((n_sims, len(teams)), dtype=np.int16)
+    for game_index, (home_index, away_index) in enumerate(zip(home_indices, away_indices)):
+        outcomes = home_wins[:, game_index]
+        wins_matrix[:, home_index] += outcomes
+        wins_matrix[:, away_index] += ~outcomes
+
+    if current_wins:
+        for team, wins in current_wins.items():
+            if team in team_index:
+                wins_matrix[:, team_index[team]] += wins
+
+    results_df = pd.DataFrame(wins_matrix, columns=teams)
 
     summary = pd.DataFrame({
         "team": results_df.columns,
