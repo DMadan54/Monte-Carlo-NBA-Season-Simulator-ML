@@ -35,15 +35,23 @@ def load_combined_logs() -> pd.DataFrame:
 def add_basic_fields(df: pd.DataFrame) -> pd.DataFrame:
     df = df.copy()
     df["GAME_DATE"] = pd.to_datetime(df["GAME_DATE"])
-    # NBA season typically starts in October; assign season year as the year the season ends.
-    df["SEASON_YEAR"] = df["GAME_DATE"].apply(lambda d: d.year + 1 if d.month >= 10 else d.year)
+    # Authoritative season labels also handle the October 2020 bubble games.
+    if "SEASON" in df:
+        start = df["SEASON"].astype(str).str.extract(r"^(\d{4})-\d{2}$", expand=False)
+    elif "SEASON_ID" in df:
+        start = df["SEASON_ID"].astype(str).str.extract(r"^2(\d{4})$", expand=False)
+    else:
+        raise ValueError("Authoritative SEASON or regular-season SEASON_ID is required")
+    if start.isna().any():
+        raise ValueError("Invalid authoritative season label")
+    df["SEASON_YEAR"] = start.astype(int) + 1
     df["WIN"] = (df["WL"] == "W").astype(int)
 
     # Each GAME_ID has exactly two rows (one per team). Join each row to
     # its opponent's row on GAME_ID to get the opponent's score and stats, then
     # compute point differential and Four Factors.
     opp_stats = df[[
-        "GAME_ID", "TEAM_ID", "PTS", "FGM", "FGA", "FG3M", "TOV", "OREB", "FTM", "FTA"
+        "GAME_ID", "TEAM_ID", "PTS", "FGM", "FGA", "FG3M", "TOV", "OREB", "DREB", "FTM", "FTA"
     ]].rename(
         columns={
             "TEAM_ID": "OPP_TEAM_ID",
@@ -53,6 +61,7 @@ def add_basic_fields(df: pd.DataFrame) -> pd.DataFrame:
             "FG3M": "OPP_FG3M",
             "TOV": "OPP_TOV",
             "OREB": "OPP_ORB",
+            "DREB": "OPP_DREB",
             "FTM": "OPP_FTM",
             "FTA": "OPP_FTA",
         }
@@ -68,20 +77,28 @@ def add_basic_fields(df: pd.DataFrame) -> pd.DataFrame:
                                df["TOV"] / (df["FGA"] + 0.44 * df["FTA"] + df["TOV"]), np.nan)
     # Create ORB column from OREB
     df["ORB"] = df["OREB"]
-    df["ORB_PCT"] = np.where((df["ORB"] + df["OPP_ORB"]) > 0,
-                               df["ORB"] / (df["ORB"] + df["OPP_ORB"]), np.nan)
+    df["ORB_PCT"] = np.where((df["ORB"] + df["OPP_DREB"]) > 0,
+                               df["ORB"] / (df["ORB"] + df["OPP_DREB"]), np.nan)
     df["FTR"] = np.where(df["FGA"] > 0, df["FTM"] / df["FGA"], np.nan)
     # Four Factors for opponent defense (treated as opponent offense)
     df["OPP_EFG"] = np.where(df["OPP_FGA"] > 0,
                                (df["OPP_FGM"] + 0.5 * df["OPP_FG3M"]) / df["OPP_FGA"], np.nan)
     df["OPP_TOV_PCT"] = np.where((df["OPP_FGA"] + 0.44 * df["OPP_FTA"] + df["OPP_TOV"]) > 0,
                                    df["OPP_TOV"] / (df["OPP_FGA"] + 0.44 * df["OPP_FTA"] + df["OPP_TOV"]), np.nan)
-    df["OPP_ORB_PCT"] = np.where((df["OPP_ORB"] + df["ORB"]) > 0,
-                                   df["OPP_ORB"] / (df["OPP_ORB"] + df["ORB"]), np.nan)
+    df["OPP_ORB_PCT"] = np.where((df["OPP_ORB"] + df["DREB"]) > 0,
+                                   df["OPP_ORB"] / (df["OPP_ORB"] + df["DREB"]), np.nan)
     df["OPP_FTR"] = np.where(df["OPP_FGA"] > 0, df["OPP_FTM"] / df["OPP_FGA"], np.nan)
 
     # MATCHUP contains "@" for away games, "vs." for home games
     df["IS_HOME"] = (~df["MATCHUP"].str.contains("@")).astype(int)
+    # Neutral-site games can list both teams as away. Choose a stable orientation
+    # for one-row-per-game modelling, with no Elo home advantage in those games.
+    home_counts = df.groupby('GAME_ID')['IS_HOME'].transform('sum')
+    if (home_counts > 1).any():
+        raise ValueError('A game has multiple home teams')
+    df['NEUTRAL_GAME'] = (home_counts == 0).astype(int)
+    neutral_first = df.loc[df.NEUTRAL_GAME == 1].sort_values('TEAM_ID').drop_duplicates('GAME_ID').index
+    df.loc[neutral_first, 'IS_HOME'] = 1
     df = df.sort_values(["TEAM_ID", "GAME_DATE"])
     return df
 
@@ -157,43 +174,62 @@ def compute_elo_ratings(df: pd.DataFrame) -> pd.DataFrame:
         # Use a simple log‑based multiplier; ensure at least 1.0
         return max(1.0, np.log(abs(point_diff) + 1.0))
 
-    # Dictionaries to hold current ratings per team
     ratings = {}
-    # Store computed ratings
-    elo_ratings = []
-    opp_elo_ratings = []
+    pre_game_ratings = {}
 
-    # Ensure deterministic order: sort by date then by team id
-    df = df.sort_values(["GAME_DATE", "TEAM_ID"]).reset_index(drop=True)
-    for idx, row in df.iterrows():
+    # Extract unique games sorted by date to update ratings exactly once per game
+    games = df.drop_duplicates(subset=["GAME_ID"]).sort_values("GAME_DATE")
+
+    for _, row in games.iterrows():
+        game_id = row["GAME_ID"]
         team = row["TEAM_ID"]
         opp = row["OPP_TEAM_ID"]
         home = row["IS_HOME"] == 1
         actual = row["WIN"]  # 1 if team won, else 0
         point_diff = row["POINT_DIFF"]
 
-        # Get current ratings (default initial)
+        # Get current pre-game ratings (default initial)
         team_rating = ratings.get(team, INITIAL_RATING)
         opp_rating = ratings.get(opp, INITIAL_RATING)
 
+        # Store pre-game ratings for BOTH teams for this GAME_ID
+        pre_game_ratings[(game_id, team)] = team_rating
+        pre_game_ratings[(game_id, opp)] = opp_rating
+
         # Effective ratings for win‑probability calculation
-        team_eff = team_rating + (HOME_ADV if home else 0)
-        opp_eff = opp_rating + (HOME_ADV if not home else 0)
+        advantage = 0 if row.get('NEUTRAL_GAME', 0) else HOME_ADV
+        team_eff = team_rating + (advantage if home else 0)
+        opp_eff = opp_rating + (advantage if not home else 0)
         expected = 1.0 / (1.0 + 10 ** ((opp_eff - team_eff) / 400.0))
 
         mult = margin_multiplier(point_diff)
         delta = K * (actual - expected) * mult
 
-        # Update ratings
+        # Update ratings once based on the outcome
         ratings[team] = team_rating + delta
-        ratings[opp] = opp_rating - delta  # opponent gets opposite adjustment
+        ratings[opp] = opp_rating - delta
 
-        elo_ratings.append(team_rating)  # rating before the game
-        opp_elo_ratings.append(opp_rating)
+    # Map the pre-game ratings back to both rows for each game
+    df["ELO_RATING"] = [pre_game_ratings[(g, t)] for g, t in zip(df["GAME_ID"], df["TEAM_ID"])]
+    df["OPP_ELO_RATING"] = [pre_game_ratings[(g, t)] for g, t in zip(df["GAME_ID"], df["OPP_TEAM_ID"])]
 
-    df["ELO_RATING"] = elo_ratings
-    df["OPP_ELO_RATING"] = opp_elo_ratings
+    test_elo_leakage(df)
+
     return df
+
+def test_elo_leakage(df: pd.DataFrame):
+    """Regression test proving neither row changes Elo after its own game result."""
+    # Enforce order: GAME_ID, then away team first, home team second.
+    df_assert = df.sort_values(["GAME_ID", "IS_HOME"]).reset_index(drop=True)
+    evens = df_assert.iloc[0::2].reset_index(drop=True)
+    odds = df_assert.iloc[1::2].reset_index(drop=True)
+
+    # For each GAME_ID, team A's ELO_RATING must equal team B's OPP_ELO_RATING and vice versa.
+    # This proves both rows received the exact same pre-game snapshot.
+    assert (evens["ELO_RATING"] == odds["OPP_ELO_RATING"]).all(), "Elo leakage detected: Away ELO != Home OPP ELO"
+    assert (odds["ELO_RATING"] == evens["OPP_ELO_RATING"]).all(), "Elo leakage detected: Home ELO != Away OPP ELO"
+
+    print("Regression test passed: No same-game Elo leakage detected.")
 
 
 def main():

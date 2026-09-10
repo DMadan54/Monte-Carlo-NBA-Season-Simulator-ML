@@ -1,222 +1,371 @@
 ================================================================================
-NBA MONTE CARLO SEASON SIMULATOR: 10-SEASON BACKTESTING & VALIDATION REPORT
+NBA MONTE CARLO SEASON SIMULATOR: PHASE 3 TANKING-FLAG TRAINING COMPARISON
 ================================================================================
 
---- 1. EXECUTIVE SUMMARY & ARCHITECTURE FIXES ---
-* Contamination Root Cause Fixed: Merging opponent stats previously caused row duplication. Fixed to exact 1:1 row correspondence across 26,418 team-game rows.
-* Schedule Loading Generalized: load_season_schedule(season) supports all seasons with strict intra-season feature backfilling (zero cross-season leakage).
-* Long-Horizon Team Strength Features Added: Added SEASON_POINT_DIFF (season-to-date cumulative net rating) and EMA_POINT_DIFF (slow-decay exponential moving average with 20-game half-life) alongside the 10-game rolling Four Factors.
-* LightGBM Four Factors + Long-Horizon Model: Trained across 10 seasons dataset with 15 features. Test accuracy increased to 60.87% (Log Loss 0.6571, Brier 0.2324).
-* Fixed-Seed Deterministic: Verified identical simulation results across reruns with same random seed.
-* Pipeline Sanity Suite: 6/6 automated test checks passed in scripts/pipeline_test_suite.py.
+--- 1. EXECUTIVE SUMMARY ---
+* Comparison design: same rebuilt features, six historical schedules, 1,000 fixed-seed simulations per season.
+* Control model: all valid training rows included.
+* Filtered model: 388 flagged team-game rows removed from the training split only.
+* Actual standings comparison: all regular-season games remain included (7,059 total actual wins).
+* Overall MAE: 2.47 wins/team (control) vs 2.48 (filtered).
+* Bottom-5 MAE: 3.11 -> 3.16 (+0.04).
+* Top-5 MAE: 3.39 -> 3.35 (-0.04).
 
---- 2. 10-SEASON MAE SUMMARY TABLE (1,000 SIMULATIONS EACH) ---
- Season  Games  MAE (Wins)  Max Error        Top Overperformed       Top Underperformed                                               Notes
-2018-19   1230        6.09      14.03 MIL (Act 60 vs Sim 49.7) NYK (Act 17 vs Sim 31.0)                                   Standard 82 games
-2019-20   1059        5.47      12.70 LAL (Act 52 vs Sim 41.2) DET (Act 20 vs Sim 32.7)                     COVID Bubble (1059 games total)
-2020-21   1080        5.68      13.71 UTA (Act 52 vs Sim 41.6) HOU (Act 17 vs Sim 30.7) COVID Shortened 72-game schedule (1080 games total)
-2021-22   1230        5.87      17.11 PHX (Act 64 vs Sim 46.9) IND (Act 25 vs Sim 37.7)                                   Standard 82 games
-2022-23   1230        4.94      13.37 MIL (Act 58 vs Sim 45.9) DET (Act 17 vs Sim 30.4)                                   Standard 82 games
-2023-24   1230        6.57      16.40 BOS (Act 64 vs Sim 49.8) DET (Act 14 vs Sim 30.4)                                   Standard 82 games
+--- 2. PHASE 3 MAE SUMMARY TABLE (1,000 SIMULATIONS EACH) ---
+ Season  Games Control MAE Filtered MAE MAE Delta Top-5 MAE Before Top-5 MAE After Bottom-5 MAE Before Bottom-5 MAE After
+2018-19   1230        2.38         2.31     -0.08             3.29            3.09                2.74               2.70
+2019-20   1059        2.03         2.00     -0.02             2.63            2.47                3.18               3.14
+2020-21   1080        2.94         3.01      0.07             3.88            4.05                4.10               4.18
+2021-22   1230        2.69         2.68     -0.01             3.56            3.50                2.66               2.63
+2022-23   1230        2.14         2.17      0.03             3.75            3.85                2.91               3.07
+2023-24   1230        2.63         2.70      0.06             3.23            3.12                3.10               3.21
 
-Overall 10-Season Mean Absolute Error (MAE): 5.77 wins/team
+--- 3. COMPLETE TEAM-BY-TEAM CONTROL VS FILTERED STANDINGS ---
 
---- 3. COMPLETE TEAM-BY-TEAM SIMULATED VS ACTUAL STANDINGS (ALL 10 SEASONS) ---
+==================== SEASON 2018-19 (Control MAE: 2.38; Filtered MAE: 2.31) ====================
+Team  Actual Wins Control Sim Filtered Sim Sim Delta Control Error Filtered Error Error Delta Ranking Group
+ MIL           60       56.68        57.25      0.57          3.32           2.75       -0.57         Top 5
+ TOR           58       55.96        55.92     -0.04          2.04           2.08        0.04         Top 5
+ GSW           57       51.69        51.57     -0.11          5.31           5.43        0.11         Top 5
+ DEN           54       49.88        50.01      0.13          4.12           3.99       -0.13         Top 5
+ HOU           53       51.34        51.82      0.47          1.66           1.18       -0.47         Top 5
+ POR           53       50.63        50.27     -0.36          2.37           2.73        0.36     Middle 20
+ PHI           51       51.80        51.77     -0.03          0.80           0.77       -0.03     Middle 20
+ UTA           50       50.91        50.59     -0.32          0.91           0.59       -0.32     Middle 20
+ BOS           49       48.01        48.10      0.09          0.99           0.90       -0.09     Middle 20
+ OKC           49       49.80        49.48     -0.32          0.80           0.48       -0.32     Middle 20
+ IND           48       48.20        47.88     -0.32          0.20           0.12       -0.07     Middle 20
+ LAC           48       43.74        43.74      0.01          4.26           4.26       -0.01     Middle 20
+ SAS           48       45.83        45.74     -0.09          2.17           2.26        0.09     Middle 20
+ BKN           42       38.30        38.05     -0.24          3.70           3.95        0.24     Middle 20
+ ORL           42       37.50        37.45     -0.06          4.50           4.55        0.06     Middle 20
+ DET           41       41.79        41.23     -0.55          0.79           0.23       -0.55     Middle 20
+ CHA           39       39.69        39.50     -0.19          0.69           0.50       -0.19     Middle 20
+ MIA           39       39.36        39.40      0.04          0.36           0.40        0.04     Middle 20
+ SAC           39       39.76        39.47     -0.29          0.76           0.47       -0.29     Middle 20
+ LAL           37       38.39        38.13     -0.26          1.39           1.13       -0.26     Middle 20
+ MIN           36       40.06        40.15      0.09          4.06           4.15        0.09     Middle 20
+ DAL           33       32.27        32.83      0.56          0.73           0.17       -0.56     Middle 20
+ MEM           33       34.03        34.51      0.47          1.03           1.51        0.47     Middle 20
+ NOP           33       40.14        40.13     -0.01          7.14           7.13       -0.01     Middle 20
+ WAS           32       35.77        35.97      0.20          3.77           3.97        0.20     Middle 20
+ ATL           29       28.41        28.78      0.37          0.59           0.22       -0.37      Bottom 5
+ CHI           22       23.43        23.59      0.16          1.43           1.59        0.16      Bottom 5
+ CLE           19       25.27        25.34      0.07          6.27           6.34        0.07      Bottom 5
+ PHX           19       19.59        19.82      0.23          0.59           0.82        0.23      Bottom 5
+ NYK           17       21.79        21.52     -0.27          4.79           4.52       -0.27      Bottom 5
 
-==================== SEASON 2018-19 (MAE: 6.09 wins) ====================
-Team  Actual Wins  Sim Mean Wins  Sim Std  Sim Min  Sim Max  Abs Error
- MIL           60          49.66     3.87       35       61      10.34
- TOR           58          48.53     4.24       35       62       9.47
- GSW           57          47.75     4.19       34       60       9.25
- DEN           54          45.34     4.21       28       57       8.66
- POR           53          44.73     4.23       29       61       8.27
- HOU           53          43.65     4.49       29       56       9.35
- PHI           51          43.82     4.48       30       60       7.18
- UTA           50          44.72     4.11       30       57       5.28
- BOS           49          46.56     4.14       33       60       2.44
- OKC           49          44.60     4.29       29       59       4.40
- IND           48          46.98     4.15       35       61       1.02
- LAC           48          43.55     4.32       30       58       4.45
- SAS           48          42.70     4.35       27       58       5.30
- BKN           42          39.94     4.33       26       53       2.06
- ORL           42          38.16     4.43       21       51       3.84
- DET           41          42.37     4.40       30       57       1.37
- MIA           39          41.69     4.40       28       57       2.69
- SAC           39          41.24     4.33       26       54       2.24
- CHA           39          42.59     4.43       29       56       3.59
- LAL           37          40.16     4.31       28       53       3.16
- MIN           36          38.77     4.22       26       53       2.77
- NOP           33          40.66     4.36       26       57       7.66
- DAL           33          38.84     4.39       24       52       5.84
- MEM           33          38.80     4.42       23       51       5.80
- WAS           32          38.81     4.31       24       53       6.81
- ATL           29          32.32     4.08       19       44       3.32
- CHI           22          31.33     4.28       17       45       9.33
- CLE           19          30.45     4.37       18       49      11.45
- PHX           19          30.27     4.27       17       43      11.27
- NYK           17          31.03     4.48       18       45      14.03
+==================== SEASON 2019-20 (Control MAE: 2.03; Filtered MAE: 2.00) ====================
+Team  Actual Wins Control Sim Filtered Sim Sim Delta Control Error Filtered Error Error Delta Ranking Group
+ MIL           56       55.34        55.34      0.01          0.66           0.66       -0.01         Top 5
+ TOR           53       49.80        50.05      0.25          3.20           2.95       -0.25         Top 5
+ LAL           52       47.65        48.11      0.46          4.35           3.89       -0.46         Top 5
+ LAC           49       44.95        45.06      0.10          4.05           3.94       -0.10         Top 5
+ BOS           48       47.10        47.11      0.01          0.90           0.89       -0.01         Top 5
+ DEN           46       44.56        44.05     -0.51          1.44           1.95        0.51     Middle 20
+ IND           45       40.52        40.41     -0.11          4.48           4.59        0.11     Middle 20
+ HOU           44       45.31        44.84     -0.47          1.31           0.84       -0.47     Middle 20
+ MIA           44       41.85        41.83     -0.02          2.15           2.17        0.02     Middle 20
+ OKC           44       40.90        41.00      0.10          3.10           3.00       -0.10     Middle 20
+ UTA           44       43.73        43.73      0.00          0.27           0.27       -0.00     Middle 20
+ DAL           43       43.74        43.92      0.18          0.74           0.92        0.18     Middle 20
+ PHI           43       40.98        40.72     -0.26          2.02           2.28        0.26     Middle 20
+ BKN           35       35.41        35.44      0.03          0.41           0.44        0.03     Middle 20
+ POR           35       36.46        36.63      0.17          1.46           1.63        0.17     Middle 20
+ MEM           34       34.14        34.20      0.06          0.14           0.20        0.06     Middle 20
+ PHX           34       30.80        31.07      0.27          3.20           2.93       -0.27     Middle 20
+ ORL           33       35.83        35.80     -0.03          2.83           2.80       -0.03     Middle 20
+ SAS           32       33.74        33.53     -0.21          1.74           1.53       -0.21     Middle 20
+ SAC           31       32.85        32.71     -0.13          1.85           1.71       -0.13     Middle 20
+ NOP           30       31.95        32.03      0.09          1.95           2.03        0.09     Middle 20
+ WAS           25       26.27        26.42      0.15          1.27           1.42        0.15     Middle 20
+ CHA           23       23.84        23.81     -0.02          0.84           0.81       -0.02     Middle 20
+ CHI           22       21.71        21.48     -0.23          0.29           0.52        0.23     Middle 20
+ NYK           21       20.78        20.99      0.21          0.22           0.01       -0.21     Middle 20
+ ATL           20       21.29        21.42      0.13          1.29           1.42        0.13      Bottom 5
+ DET           20       24.72        24.79      0.07          4.72           4.79        0.07      Bottom 5
+ CLE           19       18.95        19.32      0.38          0.05           0.32        0.27      Bottom 5
+ MIN           19       22.02        21.45     -0.57          3.02           2.45       -0.57      Bottom 5
+ GSW           15       21.82        21.72     -0.10          6.82           6.72       -0.10      Bottom 5
 
-==================== SEASON 2019-20 (MAE: 5.47 wins) ====================
-Team  Actual Wins  Sim Mean Wins  Sim Std  Sim Min  Sim Max  Abs Error
- MIL           56          45.64     3.74       33       57      10.36
- TOR           53          42.54     3.76       31       55      10.46
- LAL           52          41.20     3.85       27       53      10.80
- LAC           49          41.03     3.99       27       52       7.97
- BOS           48          41.05     3.92       29       52       6.95
- DEN           46          41.07     3.93       29       54       4.93
- IND           45          40.15     4.00       24       51       4.85
- HOU           44          40.12     4.14       27       52       3.88
- UTA           44          40.09     4.02       28       53       3.91
- MIA           44          39.72     4.10       27       53       4.28
- OKC           44          38.00     4.07       20       50       6.00
- DAL           43          42.29     4.07       30       55       0.71
- PHI           43          38.08     3.98       24       48       4.92
- POR           35          35.22     4.07       23       49       0.22
- BKN           35          35.28     4.12       22       48       0.28
- PHX           34          37.77     4.01       26       51       3.77
- MEM           34          31.91     4.22       17       45       2.09
- ORL           33          35.91     4.02       23       54       2.91
- SAS           32          33.50     4.09       21       47       1.50
- SAC           31          32.84     4.17       19       48       1.84
- NOP           30          32.48     3.97       21       44       2.48
- WAS           25          32.64     3.96       19       50       7.64
- CHA           23          25.87     3.73       14       41       2.87
- CHI           22          30.18     3.90       19       43       8.18
- NYK           21          25.96     3.82       13       38       4.96
- DET           20          32.70     4.00       21       44      12.70
- ATL           20          26.52     3.90       15       38       6.52
- MIN           19          28.79     3.77       16       40       9.79
- CLE           19          25.00     3.87       13       37       6.00
- GSW           15          25.46     3.74       10       38      10.46
+==================== SEASON 2020-21 (Control MAE: 2.94; Filtered MAE: 3.01) ====================
+Team  Actual Wins Control Sim Filtered Sim Sim Delta Control Error Filtered Error Error Delta Ranking Group
+ UTA           52       48.51        48.35     -0.15          3.49           3.65        0.15         Top 5
+ PHX           51       45.98        45.98     -0.00          5.02           5.02        0.00         Top 5
+ PHI           49       45.44        44.92     -0.53          3.56           4.08        0.53         Top 5
+ BKN           48       44.31        44.39      0.07          3.69           3.61       -0.07         Top 5
+ DEN           47       43.36        43.11     -0.25          3.64           3.89        0.25         Top 5
+ LAC           47       47.41        47.82      0.40          0.41           0.82        0.40     Middle 20
+ MIL           46       42.92        42.52     -0.40          3.08           3.48        0.40     Middle 20
+ DAL           42       40.66        40.67      0.01          1.34           1.33       -0.01     Middle 20
+ LAL           42       42.70        42.78      0.09          0.70           0.78        0.09     Middle 20
+ POR           42       39.84        39.78     -0.06          2.16           2.22        0.06     Middle 20
+ ATL           41       36.84        36.76     -0.08          4.16           4.24        0.08     Middle 20
+ NYK           41       37.66        37.85      0.19          3.34           3.15       -0.19     Middle 20
+ MIA           40       39.64        39.69      0.05          0.36           0.31       -0.05     Middle 20
+ GSW           39       35.65        35.62     -0.02          3.35           3.38        0.02     Middle 20
+ MEM           38       39.60        39.70      0.10          1.60           1.70        0.10     Middle 20
+ BOS           36       39.81        39.79     -0.03          3.81           3.79       -0.03     Middle 20
+ IND           34       36.77        36.83      0.06          2.77           2.83        0.06     Middle 20
+ WAS           34       30.04        29.90     -0.13          3.96           4.10        0.13     Middle 20
+ CHA           33       33.60        33.32     -0.28          0.60           0.32       -0.28     Middle 20
+ SAS           33       34.95        35.10      0.15          1.95           2.10        0.15     Middle 20
+ CHI           31       30.99        31.14      0.15          0.01           0.14        0.14     Middle 20
+ NOP           31       33.39        33.52      0.13          2.39           2.52        0.13     Middle 20
+ SAC           31       30.52        30.31     -0.21          0.48           0.69        0.21     Middle 20
+ TOR           27       36.35        36.25     -0.10          9.35           9.25       -0.10     Middle 20
+ MIN           23       20.56        20.98      0.42          2.44           2.02       -0.42     Middle 20
+ CLE           22       24.02        23.70     -0.32          2.02           1.70       -0.32      Bottom 5
+ OKC           22       26.24        26.59      0.35          4.24           4.59        0.35      Bottom 5
+ ORL           21       24.33        24.57      0.24          3.33           3.57        0.24      Bottom 5
+ DET           20       24.20        24.39      0.19          4.20           4.39        0.19      Bottom 5
+ HOU           17       23.72        23.66     -0.05          6.72           6.66       -0.05      Bottom 5
 
-==================== SEASON 2020-21 (MAE: 5.68 wins) ====================
-Team  Actual Wins  Sim Mean Wins  Sim Std  Sim Min  Sim Max  Abs Error
- UTA           52          41.59     3.91       29       53      10.41
- PHX           51          40.99     3.94       31       54      10.01
- PHI           49          39.53     4.02       26       53       9.47
- BKN           48          41.56     3.88       30       52       6.44
- LAC           47          40.55     4.10       27       53       6.45
- DEN           47          40.21     3.96       28       52       6.79
- MIL           46          41.28     3.90       28       54       4.72
- LAL           42          39.77     3.97       27       53       2.23
- DAL           42          37.45     4.11       23       51       4.55
- POR           42          37.16     4.09       24       52       4.84
- ATL           41          38.18     4.01       26       55       2.82
- NYK           41          35.64     4.05       24       50       5.36
- MIA           40          35.38     4.03       24       48       4.62
- GSW           39          37.43     3.97       24       51       1.57
- MEM           38          36.13     3.97       22       49       1.87
- BOS           36          37.62     4.02       25       51       1.62
- IND           34          37.92     3.96       24       54       3.92
- WAS           34          30.91     4.14       19       45       3.09
- CHA           33          35.97     4.12       23       48       2.97
- SAS           33          34.93     4.10       22       48       1.93
- CHI           31          35.91     3.98       23       50       4.91
- NOP           31          35.59     4.03       23       47       4.59
- SAC           31          32.77     4.13       19       47       1.77
- TOR           27          37.08     4.15       24       50      10.08
- MIN           23          28.60     4.05       14       42       5.60
- CLE           22          30.24     3.97       17       43       8.24
- OKC           22          27.95     3.99       16       41       5.95
- ORL           21          29.72     4.00       17       41       8.72
- DET           20          31.23     4.12       18       44      11.23
- HOU           17          30.71     4.05       19       45      13.71
+==================== SEASON 2021-22 (Control MAE: 2.69; Filtered MAE: 2.68) ====================
+Team  Actual Wins Control Sim Filtered Sim Sim Delta Control Error Filtered Error Error Delta Ranking Group
+ PHX           64       59.16        59.57      0.41          4.84           4.43       -0.41         Top 5
+ MEM           56       50.24        50.30      0.06          5.76           5.70       -0.06         Top 5
+ GSW           53       54.71        54.66     -0.04          1.71           1.66       -0.04         Top 5
+ MIA           53       51.35        51.15     -0.20          1.65           1.85        0.20         Top 5
+ DAL           52       48.18        48.13     -0.05          3.82           3.87        0.05         Top 5
+ BOS           51       50.48        50.68      0.20          0.52           0.32       -0.20     Middle 20
+ MIL           51       49.06        49.12      0.06          1.94           1.88       -0.06     Middle 20
+ PHI           51       48.70        48.82      0.12          2.30           2.18       -0.12     Middle 20
+ UTA           49       52.10        51.94     -0.16          3.10           2.94       -0.16     Middle 20
+ DEN           48       46.74        46.40     -0.34          1.26           1.60        0.34     Middle 20
+ TOR           48       44.07        44.12      0.05          3.93           3.88       -0.05     Middle 20
+ CHI           46       44.04        44.09      0.05          1.96           1.91       -0.05     Middle 20
+ MIN           46       42.96        43.11      0.16          3.04           2.89       -0.16     Middle 20
+ BKN           44       44.52        44.40     -0.13          0.52           0.40       -0.13     Middle 20
+ CLE           44       42.16        42.00     -0.16          1.84           2.00        0.16     Middle 20
+ ATL           43       42.42        42.35     -0.08          0.58           0.65        0.08     Middle 20
+ CHA           43       39.29        39.20     -0.09          3.71           3.80        0.09     Middle 20
+ LAC           42       40.35        40.41      0.05          1.65           1.59       -0.05     Middle 20
+ NYK           37       39.93        39.80     -0.13          2.93           2.80       -0.13     Middle 20
+ NOP           36       38.73        38.84      0.11          2.73           2.84        0.11     Middle 20
+ WAS           35       38.18        37.99     -0.19          3.18           2.99       -0.19     Middle 20
+ SAS           34       35.95        36.12      0.17          1.95           2.12        0.17     Middle 20
+ LAL           33       36.19        36.55      0.36          3.19           3.56        0.36     Middle 20
+ SAC           30       28.46        28.50      0.04          1.53           1.50       -0.04     Middle 20
+ POR           27       34.83        34.97      0.14          7.83           7.97        0.14     Middle 20
+ IND           25       33.59        33.63      0.04          8.59           8.63        0.04      Bottom 5
+ OKC           24       23.96        23.80     -0.16          0.04           0.20        0.16      Bottom 5
+ DET           23       24.40        24.36     -0.05          1.40           1.36       -0.05      Bottom 5
+ ORL           22       22.36        22.40      0.04          0.36           0.40        0.04      Bottom 5
+ HOU           20       22.89        22.57     -0.32          2.89           2.57       -0.32      Bottom 5
 
-==================== SEASON 2021-22 (MAE: 5.87 wins) ====================
-Team  Actual Wins  Sim Mean Wins  Sim Std  Sim Min  Sim Max  Abs Error
- PHX           64          46.89     4.14       33       59      17.11
- MEM           56          43.40     4.33       29       56      12.60
- GSW           53          48.68     4.09       36       61       4.32
- MIA           53          46.99     4.19       33       61       6.01
- DAL           52          42.83     4.26       29       56       9.17
- BOS           51          45.61     4.48       31       59       5.39
- MIL           51          44.65     4.34       30       57       6.35
- PHI           51          44.55     4.33       33       58       6.45
- UTA           49          47.21     4.30       33       59       1.79
- DEN           48          44.61     4.39       31       59       3.39
- TOR           48          42.69     4.29       30       57       5.31
- MIN           46          44.15     4.30       32       59       1.85
- CHI           46          43.39     4.39       31       60       2.61
- BKN           44          41.30     4.26       28       54       2.70
- CLE           44          44.40     4.36       31       57       0.40
- CHA           43          40.87     4.26       26       54       2.13
- ATL           43          42.16     4.22       29       55       0.84
- LAC           42          42.45     4.39       30       56       0.45
- NYK           37          41.53     4.46       25       56       4.53
- NOP           36          37.82     4.47       22       53       1.82
- WAS           35          40.54     4.42       27       56       5.54
- SAS           34          40.46     4.37       27       55       6.46
- LAL           33          39.09     4.43       23       58       6.09
- SAC           30          36.58     4.35       22       51       6.58
- POR           27          36.02     4.37       20       50       9.02
- IND           25          37.73     4.25       26       53      12.73
- OKC           24          32.27     4.24       19       46       8.27
- DET           23          31.30     4.43       16       45       8.30
- ORL           22          29.26     4.36       16       44       7.26
- HOU           20          30.57     4.30       18       45      10.57
+==================== SEASON 2022-23 (Control MAE: 2.14; Filtered MAE: 2.17) ====================
+Team  Actual Wins Control Sim Filtered Sim Sim Delta Control Error Filtered Error Error Delta Ranking Group
+ MIL           58       51.64        51.34     -0.30          6.36           6.66        0.30         Top 5
+ BOS           57       53.99        53.76     -0.23          3.01           3.24        0.23         Top 5
+ PHI           54       50.98        51.05      0.07          3.02           2.95       -0.07         Top 5
+ DEN           53       49.39        49.25     -0.13          3.61           3.75        0.13         Top 5
+ CLE           51       48.26        48.37      0.11          2.74           2.63       -0.11         Top 5
+ MEM           51       51.43        51.56      0.13          0.43           0.56        0.13     Middle 20
+ SAC           48       45.34        45.14     -0.20          2.66           2.86        0.20     Middle 20
+ NYK           47       45.06        44.67     -0.39          1.94           2.33        0.39     Middle 20
+ BKN           45       45.73        45.81      0.08          0.73           0.81        0.08     Middle 20
+ PHX           45       47.05        47.03     -0.02          2.05           2.03       -0.02     Middle 20
+ GSW           44       45.97        46.03      0.06          1.97           2.03        0.06     Middle 20
+ LAC           44       42.27        42.26     -0.01          1.73           1.74        0.01     Middle 20
+ MIA           44       43.63        43.66      0.03          0.37           0.34       -0.03     Middle 20
+ LAL           43       39.90        39.95      0.05          3.10           3.05       -0.05     Middle 20
+ MIN           42       42.16        42.28      0.12          0.16           0.28        0.12     Middle 20
+ NOP           42       42.36        42.36      0.01          0.36           0.36        0.01     Middle 20
+ ATL           41       42.51        42.25     -0.26          1.51           1.25       -0.26     Middle 20
+ TOR           41       43.25        43.23     -0.02          2.25           2.23       -0.02     Middle 20
+ CHI           40       40.36        40.13     -0.23          0.36           0.13       -0.23     Middle 20
+ OKC           40       39.26        38.91     -0.35          0.74           1.09        0.35     Middle 20
+ DAL           38       44.47        44.30     -0.17          6.47           6.30       -0.17     Middle 20
+ UTA           37       38.00        37.81     -0.19          1.00           0.81       -0.19     Middle 20
+ IND           35       34.16        34.53      0.37          0.84           0.47       -0.37     Middle 20
+ WAS           35       36.56        36.30     -0.26          1.56           1.30       -0.26     Middle 20
+ ORL           34       33.32        33.53      0.21          0.68           0.47       -0.21     Middle 20
+ POR           33       32.11        32.25      0.14          0.89           0.75       -0.14      Bottom 5
+ CHA           27       29.74        30.24      0.50          2.74           3.24        0.50      Bottom 5
+ HOU           22       21.57        21.82      0.25          0.43           0.18       -0.25      Bottom 5
+ SAS           22       25.78        26.34      0.55          3.78           4.34        0.55      Bottom 5
+ DET           17       23.73        23.83      0.10          6.73           6.83        0.10      Bottom 5
 
-==================== SEASON 2022-23 (MAE: 4.94 wins) ====================
-Team  Actual Wins  Sim Mean Wins  Sim Std  Sim Min  Sim Max  Abs Error
- MIL           58          45.86     4.21       31       62      12.14
- BOS           57          46.23     4.14       33       59      10.77
- PHI           54          44.66     4.42       29       60       9.34
- DEN           53          44.61     4.36       32       58       8.39
- CLE           51          47.50     4.33       33       61       3.50
- MEM           51          44.51     4.37       30       56       6.49
- SAC           48          44.74     4.31       32       60       3.26
- NYK           47          42.82     4.23       30       55       4.18
- BKN           45          42.34     4.25       28       59       2.66
- PHX           45          43.75     4.24       31       57       1.25
- LAC           44          41.10     4.46       25       53       2.90
- MIA           44          41.43     4.51       24       57       2.57
- GSW           44          41.52     4.40       27       55       2.48
- LAL           43          39.39     4.34       28       52       3.61
- MIN           42          41.36     4.40       27       57       0.64
- NOP           42          44.43     4.27       33       58       2.43
- ATL           41          42.10     4.41       28       54       1.10
- TOR           41          42.78     4.24       30       56       1.78
- OKC           40          41.34     4.41       25       55       1.34
- CHI           40          41.17     4.22       26       56       1.17
- DAL           38          43.44     4.27       31       57       5.44
- UTA           37          41.61     4.42       26       54       4.61
- IND           35          39.88     4.35       27       53       4.88
- WAS           35          39.71     4.25       26       52       4.71
- ORL           34          36.21     4.29       22       51       2.21
- POR           33          39.01     4.37       24       55       6.01
- CHA           27          34.00     4.29       20       48       7.00
- HOU           22          31.35     4.55       18       44       9.35
- SAS           22          30.77     4.31       16       45       8.77
- DET           17          30.37     4.25       12       48      13.37
+==================== SEASON 2023-24 (Control MAE: 2.63; Filtered MAE: 2.70) ====================
+Team  Actual Wins Control Sim Filtered Sim Sim Delta Control Error Filtered Error Error Delta Ranking Group
+ BOS           64       60.57        61.21      0.64          3.43           2.79       -0.64         Top 5
+ DEN           57       51.71        51.41     -0.30          5.29           5.59        0.30         Top 5
+ OKC           57       52.67        52.52     -0.16          4.33           4.48        0.16         Top 5
+ MIN           56       54.00        54.10      0.10          2.00           1.90       -0.10         Top 5
+ LAC           51       49.88        50.16      0.28          1.12           0.84       -0.28         Top 5
+ DAL           50       43.23        43.28      0.05          6.77           6.72       -0.05     Middle 20
+ NYK           50       49.18        49.05     -0.13          0.82           0.95        0.13     Middle 20
+ MIL           49       48.88        48.26     -0.62          0.12           0.74        0.62     Middle 20
+ NOP           49       49.99        49.86     -0.13          0.99           0.86       -0.13     Middle 20
+ PHX           49       46.33        46.45      0.13          2.67           2.55       -0.13     Middle 20
+ CLE           48       49.13        49.31      0.17          1.13           1.31        0.17     Middle 20
+ IND           47       43.88        43.72     -0.16          3.12           3.28        0.16     Middle 20
+ LAL           47       44.97        44.55     -0.42          2.03           2.45        0.42     Middle 20
+ ORL           47       46.06        45.84     -0.23          0.94           1.16        0.23     Middle 20
+ PHI           47       44.67        44.53     -0.15          2.33           2.47        0.15     Middle 20
+ GSW           46       47.51        47.37     -0.13          1.51           1.37       -0.13     Middle 20
+ MIA           46       45.12        45.11     -0.01          0.88           0.89        0.01     Middle 20
+ SAC           46       44.23        44.29      0.05          1.77           1.71       -0.05     Middle 20
+ HOU           41       39.10        39.05     -0.04          1.90           1.95        0.04     Middle 20
+ CHI           39       40.87        40.93      0.06          1.87           1.93        0.06     Middle 20
+ ATL           36       36.34        36.42      0.08          0.34           0.42        0.08     Middle 20
+ BKN           32       36.52        36.29     -0.23          4.52           4.29       -0.23     Middle 20
+ UTA           31       33.61        33.70      0.09          2.61           2.70        0.09     Middle 20
+ MEM           27       30.26        30.59      0.33          3.26           3.59        0.33     Middle 20
+ TOR           25       32.79        32.96      0.17          7.79           7.96        0.17     Middle 20
+ SAS           22       23.52        23.43     -0.10          1.52           1.43       -0.10      Bottom 5
+ CHA           21       23.28        23.18     -0.10          2.28           2.18       -0.10      Bottom 5
+ POR           21       23.78        24.16      0.38          2.78           3.16        0.38      Bottom 5
+ WAS           15       19.82        20.19      0.36          4.82           5.19        0.36      Bottom 5
+ DET           14       18.07        18.09      0.02          4.07           4.09        0.02      Bottom 5
 
-==================== SEASON 2023-24 (MAE: 6.57 wins) ====================
-Team  Actual Wins  Sim Mean Wins  Sim Std  Sim Min  Sim Max  Abs Error
- BOS           64          49.81     4.00       37       61      14.19
- DEN           57          47.00     4.37       32       63      10.00
- OKC           57          47.48     4.07       32       63       9.52
- MIN           56          46.76     4.34       32       62       9.24
- LAC           51          46.43     4.04       35       58       4.57
- DAL           50          43.75     4.15       27       57       6.25
- NYK           50          44.72     4.26       32       58       5.28
- MIL           49          45.54     4.27       32       58       3.46
- NOP           49          45.06     4.25       32       58       3.94
- PHX           49          44.37     4.16       32       59       4.63
- CLE           48          44.14     4.37       32       56       3.86
- IND           47          43.23     4.12       29       58       3.77
- ORL           47          44.52     4.22       31       61       2.48
- PHI           47          45.52     4.32       29       57       1.48
- LAL           47          42.14     4.26       27       55       4.86
- GSW           46          43.38     4.40       31       60       2.62
- SAC           46          42.12     4.14       30       53       3.88
- MIA           46          42.70     4.32       29       56       3.30
- HOU           41          42.81     4.29       29       59       1.81
- CHI           39          37.78     4.40       22       52       1.22
- ATL           36          40.04     4.30       28       53       4.04
- BKN           32          40.10     4.32       28       53       8.10
- UTA           31          35.02     4.33       20       48       4.02
- MEM           27          33.06     4.36       20       49       6.06
- TOR           25          37.48     4.36       24       50      12.48
- SAS           22          31.54     4.25       18       47       9.54
- POR           21          31.96     4.39       17       46      10.96
- CHA           21          31.87     4.24       18       45      10.87
- WAS           15          29.26     4.28       15       42      14.26
- DET           14          30.40     4.17       17       46      16.40
+================================================================================
+SESSION LOG: 2026-09-10 — LEAKAGE FIXES + WALK-FORWARD BACKTEST
+================================================================================
+
+--- CHANGES MADE ---
+
+1. FIXED: Same-game Elo leakage in src/features/build_team_features.py
+   Bug: iterrows() processed row-by-row, updating ratings mid-game so the
+   second team row received a post-result rating as its "pre-game" value.
+   Fix: Deduplicate by GAME_ID, sort by date, snapshot pre-game ratings for
+   BOTH teams before any update, then update once per game.
+   Runtime regression test added: test_elo_leakage() asserts
+     team_A.ELO_RATING == team_B.OPP_ELO_RATING for every game pair.
+
+2. FIXED: Future leakage in src/models/season_sim.py load_season_schedule()
+   Bug: bfill().ffill() — backward fill pulled values from later games in the
+   same season into early-season rows.
+   Fix: Replaced with ffill() only (forward-fill within team), then filled
+   any remaining NaN with documented neutral defaults:
+     ROLL_WIN_PCT=0.5, ROLL_POINT_DIFF=0.0, DAYS_SINCE_LAST_GAME=3.0,
+     ROLL_EFG/OPP=0.52, ROLL_TOV_PCT/OPP=0.13, ROLL_ORB_PCT/OPP=0.25,
+     ROLL_FTR/OPP=0.20, ROLL_EFG_DIFF=0.0, SEASON_POINT_DIFF=0.0,
+     EMA_POINT_DIFF=0.0
+   Runtime regression test added: test_no_future_leakage() checks the first
+   game of each loaded season received exactly 0.5 for ROLL_WIN_PCT (not a
+   later-game derived value).
+
+3. NEW FILE: src/models/walk_forward_backtest.py
+   Full walk-forward backtest engine:
+   - For each target season, trains strictly on SEASON_YEAR < target.
+   - Hard assert: zero target-season rows in training set.
+   - Actual wins computed from full feature table (all games, tanking retained).
+   - Tanking flag exclusion applies to training rows only (--exclude-tanking-flags).
+   - Fixed seed=42, 1000 simulations per season.
+   - Outputs CSV: data/processed/walk_forward_backtest_results.csv
+     or walk_forward_backtest_results_no_tanking.csv
+
+4. NEW FILE: scripts/compare_tanking_backtests.py
+   Loads both walk-forward CSVs, merges on SEASON+TEAM, asserts actual wins
+   are identical between runs, and reports overall/top-5/bottom-5 MAE + deltas.
+   Saves: data/processed/walk_forward_comparison.csv
+
+--- WALK-FORWARD BACKTEST RESULTS (2016-17 to 2023-24, seed=42, 1000 sims) ---
+
+Seasons evaluated: 8 (2016-17 through 2023-24)
+Training grows each fold: 2,370 rows (2016-17) -> 18,318 rows (2023-24)
+
+All Training Games:
+  Mean Absolute Error: 3.345 wins/team
+
+Tanking Games Excluded from Training:
+  Mean Absolute Error: 3.406 wins/team
+
+--- TANKING COMPARISON REPORT (walk-forward, 8 seasons) ---
+
+Metric              | All Training | No-Tanking Training | Delta
+--------------------|-------------|---------------------|-------
+Overall MAE         |       3.345 |               3.406 | +0.061 (worse)
+Top-5 Teams MAE     |       4.809 |               4.932 | +0.123 (worse)
+Bottom-5 Teams MAE  |       4.898 |               4.977 | +0.079 (worse)
+
+Actual wins confirmed IDENTICAL between runs (assert passed, 0 mismatches).
+
+FINDING: Excluding flagged tanking games from training worsens accuracy
+uniformly. The model benefits from seeing below-average performances.
+Tanking flags should NOT be excluded in the primary training path.
+
+--- LEAKAGE AUDIT RESULTS (read-only, 2026-09-10) ---
+
+CHECK 1: All model features pre-game safe
+  PASS -- every ROLL_* feature uses .shift(1).rolling() or .shift(1).ewm().
+         DAYS_SINCE_LAST_GAME uses .diff() (looks backward by design).
+         ELO_RATING uses pre_game_ratings snapshot taken before any update.
+  Refs: build_team_features.py L94-126, L174-180
+
+CHECK 2: Zero target-season rows in training
+  PASS -- walk_forward_backtest.py L48 filters SEASON_YEAR < season_year.
+         L51 asserts the complement is empty (hard crash if violated).
+  Ref:  walk_forward_backtest.py L48, L51
+
+CHECK 3: No bfill or future aggregation anywhere
+  PASS -- season_sim.py L134-135 uses groupby ffill() only.
+         L137-139 fills residual NaN with neutral constants.
+         No bfill call exists in the codebase.
+  Ref:  season_sim.py L115-139
+
+CHECK 4: Elo pre-game for both teams
+  PASS -- compute_elo_ratings() snapshots team_rating and opp_rating into
+         pre_game_ratings[(game_id, team/opp)] before computing delta.
+         Ratings dict updated only after both snapshots are stored.
+         Runtime assert in test_elo_leakage() enforces this.
+  Ref:  build_team_features.py L174-180, L195-196, L202-214
+
+CHECK 5: Actual standings retain all real games
+  PASS -- actual_wins sourced from df_features (raw, no dropna) grouped by
+         TEAM_ABBREVIATION. The dropna-filtered df_features_clean is used
+         for training only.
+  Ref:  walk_forward_backtest.py L71-72
+
+CHECK 6: Tanking flags affect training only
+  PASS -- exclusion applied to train_rows copy only (L58-61).
+         target_season_actual computed from unfiltered df_features (L71).
+         schedule loaded independently via load_season_schedule (L75).
+  Ref:  walk_forward_backtest.py L58-61, L71, L75
+
+--- FILES CHANGED THIS SESSION ---
+
+MODIFIED: src/features/build_team_features.py
+  - compute_elo_ratings(): rewrote to group by GAME_ID, snapshot pre-game
+    ratings for both teams, update once per game.
+  - Added test_elo_leakage() runtime assertion function.
+
+MODIFIED: src/models/season_sim.py
+  - load_season_schedule(): replaced bfill().ffill() with ffill() + neutral
+    default fillna per column.
+  - Added test_no_future_leakage() runtime assertion function.
+
+NEW: src/models/walk_forward_backtest.py
+  - run_walk_forward_backtest(): full walk-forward engine with strict temporal
+    isolation, tanking flag switch, fixed seed, and CSV output.
+
+NEW: scripts/compare_tanking_backtests.py
+  - Loads both result CSVs, validates actual wins match, reports MAE deltas,
+    saves walk_forward_comparison.csv.
+
+--- OUTPUT FILES ---
+
+data/processed/walk_forward_backtest_results.csv
+  Columns: SEASON, TEAM, ACTUAL_WINS, SIMULATED_MEAN_WINS, ABSOLUTE_ERROR
+  Rows: 240 (30 teams x 8 seasons)
+
+data/processed/walk_forward_backtest_results_no_tanking.csv
+  Same schema; training excluded flagged tanking rows.
+
+data/processed/walk_forward_comparison.csv
+  Merged: SEASON, TEAM, ACTUAL_WINS, SIM_ALL_WINS, ERR_ALL,
+          SIM_NOTANK_WINS, ERR_NOTANK
+
+--- REMAINING KNOWN ISSUES ---
+
+* Top/bottom-5 MAE is ~4.8-4.9 wins in walk-forward vs ~3.3 overall,
+  confirming the model still under-predicts elite teams and over-predicts bad
+  teams (the extremes-compression bias documented in PLAN.md). This is a
+  known open issue, not introduced by today's changes.
+* Walk-forward MAE (3.34) is higher than Phase 3 MAE (2.47) because Phase 3
+  used train_test_split on the full pool (mild temporal leakage). Walk-forward
+  is the methodologically correct figure.
+* 2015-16 cannot be a target season (no prior training data); first evaluable
+  fold is 2016-17 with only one prior season of training data.

@@ -1,0 +1,44 @@
+{
+  "requested_at": "2026-09-10T20:02:54.187055+00:00",
+  "endpoint": "CommonTeamRoster",
+  "team_id": "1610612738",
+  "season": "2023-24",
+  "coach_limitation": "Season roster coaching output lacks effective assignment dates and known-at timestamps",
+  "status": "available",
+  "columns": [
+    [
+      "TeamID",
+      "SEASON",
+      "LeagueID",
+      "PLAYER",
+      "NICKNAME",
+      "PLAYER_SLUG",
+      "NUM",
+      "POSITION",
+      "HEIGHT",
+      "WEIGHT",
+      "BIRTH_DATE",
+      "AGE",
+      "EXP",
+      "SCHOOL",
+      "PLAYER_ID",
+      "HOW_ACQUIRED"
+    ],
+    [
+      "TEAM_ID",
+      "SEASON",
+      "COACH_ID",
+      "FIRST_NAME",
+      "LAST_NAME",
+      "COACH_NAME",
+      "IS_ASSISTANT",
+      "COACH_TYPE",
+      "SORT_SEQUENCE",
+      "SUB_SORT_SEQUENCE"
+    ]
+  ],
+  "rows": [
+    17,
+    9
+  ]
+}

@@ -6,3 +6,8 @@ __pycache__/
 venv/
 .env
 .ipynb_checkpoints/
+# Local agent instructions are workspace-only and must not be committed.
+**/[Aa][Gg][Ee][Nn][Tt][Ss].md
+# Versioned local ML artifacts and source-response caches (summaries live in docs).
+/data/processed/player_runs/
+/data/raw/player_metadata/

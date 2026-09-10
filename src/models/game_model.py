@@ -8,12 +8,13 @@ Usage:
 
 import argparse
 from pathlib import Path
+from datetime import datetime, timezone
+import uuid
 
 import joblib
 import lightgbm as lgb
 import pandas as pd
 from sklearn.metrics import accuracy_score, brier_score_loss, log_loss
-from sklearn.model_selection import train_test_split
 
 PROCESSED_DATA_DIR = Path(__file__).resolve().parents[2] / "data" / "processed"
 MODELS_DIR = Path(__file__).resolve().parents[2] / "data" / "processed" / "models"
@@ -22,6 +23,7 @@ FEATURES = [
     "ROLL_WIN_PCT",
     "ROLL_POINT_DIFF",
     "IS_HOME",
+    "NEUTRAL_GAME",
     "DAYS_SINCE_LAST_GAME",
     "ROLL_EFG",
     "ROLL_TOV_PCT",
@@ -47,7 +49,13 @@ def load_features() -> pd.DataFrame:
         raise FileNotFoundError(
             f"{path} not found. Run src/features/build_team_features.py first."
         )
-    return pd.read_parquet(path)
+    frame = pd.read_parquet(path)
+    missing = set(FEATURES) - set(frame)
+    if missing:
+        raise ValueError(f'Cached features have an old schema: {sorted(missing)}. '
+                         'Rebuild team features or use scripts.run_player_experiments, '
+                         'which builds corrected features in memory.')
+    return frame
 
 
 def add_tanking_review_flag(df: pd.DataFrame) -> pd.DataFrame:
@@ -95,9 +103,12 @@ def train_model(exclude_tanking_flags: bool = False, model_output: Path | None =
         df = add_tanking_review_flag(df)
     df = df.dropna(subset=FEATURES + [TARGET])
 
-    train_rows, test_rows = train_test_split(
-        df, test_size=0.2, random_state=42
-    )
+    # Chronological season holdout keeps both rows of each game in one split.
+    test_season = df['SEASON_YEAR'].max()
+    train_rows = df[df.SEASON_YEAR < test_season].copy()
+    test_rows = df[(df.SEASON_YEAR == test_season) & (df.IS_HOME == 1)].copy()
+    if train_rows.empty or test_rows.empty:
+        raise ValueError('Need at least two seasons for chronological evaluation')
     removed_count = 0
     if exclude_tanking_flags:
         removed_count = int(train_rows["LIKELY_TANKING_REVIEW_FLAG"].sum())
@@ -129,7 +140,10 @@ def train_model(exclude_tanking_flags: bool = False, model_output: Path | None =
     ):
         print(f"  {feat}: {imp}")
 
-    model_path = model_output or MODELS_DIR / "game_model_four_factors.pkl"
+    stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
+    model_path = model_output or MODELS_DIR / f"game_model_v4_{stamp}_{uuid.uuid4().hex[:6]}.pkl"
+    if model_path.exists():
+        raise FileExistsError(f'Refusing to overwrite existing model: {model_path}')
     joblib.dump(model, model_path)
     print(f"\nSaved model to {model_path}")
     return model
@@ -145,7 +159,7 @@ def main():
     parser.add_argument(
         "--model-output",
         type=Path,
-        help="Optional path for the saved model (defaults to the primary model path).",
+        help="Optional unused path for the saved model (default: unique versioned filename).",
     )
     args = parser.parse_args()
     train_model(args.exclude_tanking_flags, args.model_output)

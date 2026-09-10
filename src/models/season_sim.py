@@ -103,7 +103,7 @@ def load_season_schedule(season: str = "2024-25", features: Optional[List[str]] 
             f"No features found for season {season} (SEASON_YEAR={season_year})."
         )
 
-    # Backfill early-season missing rolling features within the same team & season
+    # Carry past values forward within the same team & season
     # so that all regular season games can be simulated.
     season_feats.sort_values(["TEAM_ABBREVIATION", "GAME_DATE"], inplace=True)
     model_features = features or FEATURES
@@ -111,9 +111,34 @@ def load_season_schedule(season: str = "2024-25", features: Optional[List[str]] 
     if missing_features:
         raise ValueError(f"Schedule features missing for {season}: {sorted(missing_features)}")
     roll_cols = [c for c in model_features if c != "IS_HOME"]
+
+    # Use ffill to carry forward valid values, and fill any remaining initial NaNs
+    # with pre-defined neutral defaults so we do NOT leak future games backward.
+    NEUTRAL_DEFAULTS = {
+        "ROLL_WIN_PCT": 0.5,
+        "ROLL_POINT_DIFF": 0.0,
+        "DAYS_SINCE_LAST_GAME": 3.0,
+        "ROLL_EFG": 0.52,
+        "ROLL_TOV_PCT": 0.13,
+        "ROLL_ORB_PCT": 0.25,
+        "ROLL_FTR": 0.20,
+        "ROLL_EFG_OPP": 0.52,
+        "ROLL_TOV_PCT_OPP": 0.13,
+        "ROLL_ORB_PCT_OPP": 0.25,
+        "ROLL_FTR_OPP": 0.20,
+        "ROLL_EFG_DIFF": 0.0,
+        "SEASON_POINT_DIFF": 0.0,
+        "EMA_POINT_DIFF": 0.0,
+        "ELO_RATING": 1500.0,
+        "OPP_ELO_RATING": 1500.0,
+    }
+
     season_feats[roll_cols] = (
-        season_feats.groupby("TEAM_ABBREVIATION")[roll_cols].bfill().ffill()
+        season_feats.groupby("TEAM_ABBREVIATION")[roll_cols].ffill()
     )
+    for col in roll_cols:
+        default_val = NEUTRAL_DEFAULTS.get(col, 0.0)
+        season_feats[col] = season_feats[col].fillna(default_val)
 
     # 2. Extract home schedule (every game appears exactly once as home)
     schedule = season_feats[season_feats["IS_HOME"] == 1].copy()
@@ -143,7 +168,32 @@ def load_season_schedule(season: str = "2024-25", features: Optional[List[str]] 
 
     schedule.sort_values("GAME_DATE", inplace=True)
     schedule.reset_index(drop=True, inplace=True)
+
+    test_no_future_leakage(schedule, team_feat_all)
     return schedule
+
+def test_no_future_leakage(schedule: pd.DataFrame, team_feat_all: pd.DataFrame):
+    """
+    Proves the first game of a season does not receive a value derived from any later game.
+    """
+    if schedule.empty:
+        return
+
+    # Pick the first game in the schedule and the home team
+    team = schedule["HOME_TEAM"].iloc[0]
+    date = schedule["GAME_DATE"].iloc[0]
+
+    # Verify in the raw unprocessed team_feat_all that ROLL_WIN_PCT was NaN
+    # (Since it requires min_periods=3 games to compute)
+    raw_rows = team_feat_all[(team_feat_all["TEAM_ABBREVIATION"] == team) & (team_feat_all["GAME_DATE"] == date)]
+    if not raw_rows.empty:
+        raw_val = raw_rows["ROLL_WIN_PCT"].iloc[0]
+        assert pd.isna(raw_val), f"Expected raw feature to be NaN for first game, but got {raw_val}"
+
+    # Check the processed schedule
+    processed_val = schedule.loc[0, "ROLL_WIN_PCT"]
+    assert processed_val == 0.5, f"Leakage detected: expected neutral default 0.5, got {processed_val}"
+    print("Regression test passed: No future leakage detected in schedule loading.")
 
 
 def load_remaining_schedule() -> pd.DataFrame:
@@ -220,7 +270,7 @@ def run_simulation_with_schedule(
 def run_simulation(n_sims: int = 5000, current_wins: Optional[dict] = None) -> pd.DataFrame:
     """Run simulation on the default remaining schedule."""
     model = load_model()
-    schedule = load_remaining_schedule()
+    schedule = load_season_schedule("2024-25", features=list(getattr(model, "feature_name_", FEATURES)))
     return run_simulation_with_schedule(schedule, model, n_sims=n_sims, current_wins=current_wins)
 
 
@@ -231,7 +281,7 @@ def run_multi_season_simulation(
     model = load_model()
     results = {}
     for season in seasons:
-        sched = load_season_schedule(season)
+        sched = load_season_schedule(season, features=list(getattr(model, "feature_name_", FEATURES)))
         summary = run_simulation_with_schedule(sched, model, n_sims=n_sims, seed=seed)
         results[season] = summary
     return results
@@ -246,7 +296,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     model = load_model()
-    schedule = load_season_schedule(args.season)
+    schedule = load_season_schedule(args.season, features=list(getattr(model, "feature_name_", FEATURES)))
     summary = run_simulation_with_schedule(schedule, model, n_sims=args.n_sims)
     print(f"\n--- Simulation Results for {args.season} ({args.n_sims} sims) ---")
     print(summary.head(10))
