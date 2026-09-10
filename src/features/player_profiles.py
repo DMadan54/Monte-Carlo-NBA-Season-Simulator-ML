@@ -11,7 +11,7 @@ from src.ingest.player_data import COUNTS
 
 RATE_COUNTS = ['PTS', 'REB', 'AST', 'STL', 'BLK', 'TOV', 'FGA', 'FG3A']
 PROFILE = [f'{c}_36' for c in RATE_COUNTS] + ['EFG']
-INPUTS = PROFILE + ['LAST_MIN', 'MEAN_MIN', 'RECENT_MIN', 'GAMES_SEEN', 'DAYS_ABSENT', 'TEAM_GAMES_ABSENT', 'PTS_TREND']
+INPUTS = PROFILE + ['LAST_MIN', 'MEAN_MIN', 'RECENT_MIN', 'GAMES_SEEN', 'DAYS_ABSENT', 'TEAM_GAMES_ABSENT', 'PTS_TREND', 'AGE', 'AGE_SQUARED']
 
 
 @dataclass
@@ -88,7 +88,10 @@ def build_candidates(team, players):
                     MEAN_MIN=state.mean_min, RECENT_MIN=state.recent_min, GAMES_SEEN=state.games,
                     DAYS_ABSENT=(date - state.date).days,
                     TEAM_GAMES_ABSENT=team_games.get(game.TEAM_ID, 0) - state.team_game,
-                    PTS_TREND=state.recent_pts - values['PTS_36'])
+                    PTS_TREND=state.recent_pts - values['PTS_36'],
+                    # These neutral defaults preserve a no-age baseline. Dated birth
+                    # evidence is joined later with add_age_features.
+                    AGE=26., AGE_SQUARED=26. ** 2)
                 label = labels.get((game.GAME_ID, pid))
                 # A traded player may appear for the opposition: zero minutes on old team.
                 played = label is not None and label.TEAM_ID == game.TEAM_ID
@@ -117,6 +120,29 @@ def build_candidates(team, players):
             league_counts += counts
             league_minutes += row.MIN
     return pd.DataFrame(records)
+
+
+def add_age_features(candidates, birth_dates):
+    """Attach age known before the game from a validated static source.
+
+    Birth dates are immutable metadata rather than a future-performance label.
+    The function is intentionally strict: silently defaulting an unknown player
+    to an average age would mix missing-data behaviour into the age experiment.
+    """
+    births = birth_dates[['PLAYER_ID', 'BIRTH_DATE']].copy()
+    births['PLAYER_ID'] = births['PLAYER_ID'].astype(str)
+    births['BIRTH_DATE'] = pd.to_datetime(births['BIRTH_DATE'], errors='raise')
+    if births.PLAYER_ID.duplicated().any():
+        raise ValueError('Birth dates must contain one row per player')
+    result = candidates.merge(births, on='PLAYER_ID', how='left', validate='many_to_one')
+    if result.BIRTH_DATE.isna().any():
+        missing = result.loc[result.BIRTH_DATE.isna(), 'PLAYER_ID'].nunique()
+        raise ValueError(f'Missing birth dates for {missing} candidate players')
+    result['AGE'] = ((pd.to_datetime(result.GAME_DATE) - result.BIRTH_DATE).dt.days / 365.25)
+    if (result.AGE < 17).any() or (result.AGE > 50).any():
+        raise ValueError('Implausible player age from birth-date contract')
+    result['AGE_SQUARED'] = result.AGE ** 2
+    return result.drop(columns='BIRTH_DATE')
 
 
 def aggregate_profiles(candidates, minute_column, points_column=None):

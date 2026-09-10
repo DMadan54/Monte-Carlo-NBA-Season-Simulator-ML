@@ -29,6 +29,7 @@ Test results:
 - Player minutes MAE: 7.489 baseline versus 5.827 ML, on 40,970 candidate rows, before rotation normalization. New/unobserved arrivals are not fully covered by this candidate-based target.
 - Next-season scoring RMSE: 2.693 baseline versus 2.542 ML points per 36, weighted by minutes across 374 qualifying players. Rebounds/assists/season-minute results were mixed across validation/test.
 - Adding roster-fit interactions did not improve validation. Those features are not in the selected model.
+- A dated age/age-squared variant of the in-season minutes and scoring models was also tested. It did not improve the held-out game model: development-hybrid log loss was 0.601159 with age versus 0.601090 without. The age input remains optional for future experiments, not selected.
 
 The standings objective is not solved: summing rolling game probabilities produced 3.926-win MAE for the hybrid versus 3.784 for the team baseline, and strong/weak-team compression persists. These are rolling retrospective aggregates, not preseason forecasts.
 
@@ -51,5 +52,7 @@ The simulator supports persistent per-player scoring perturbations, but their ma
 ## Reproduction and artifacts
 
 Use `requirements-player.lock.txt` and the commands in [EXECUTION_LOG.md](EXECUTION_LOG.md). The local run is `data/processed/player_runs/v1_20260910T200443Z_6a86c4/`; it contains model bundles, per-game predictions, player forecasts, metrics, calibration bins, source hashes, and environment versions. Large caches/models are ignored by git; commit source code and documentation, not these local datasets.
+
+The age-aware follow-up is `data/processed/player_runs/v1_20260910T215005Z_f257bf/`. Run it with `--birth-dates data/raw/player_metadata/birth_dates_20260910T200811Z.csv`; that locally cached source is intentionally ignored by git.
 
 A defensible portfolio description: “Developed a player-aware NBA forecasting pipeline with LightGBM player projections, chronological out-of-fold validation, and reproducible Monte Carlo roster scenarios; evaluated improvements and failure modes against team-only baselines.”

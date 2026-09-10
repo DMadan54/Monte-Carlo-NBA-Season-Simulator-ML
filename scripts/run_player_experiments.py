@@ -13,9 +13,9 @@ import joblib
 import numpy as np
 import pandas as pd
 
-from src.ingest.player_data import load_cached
+from src.ingest.player_data import load_cached, load_dated_context, file_hash
 from src.features.build_team_features import add_basic_fields, add_rolling_features
-from src.features.player_profiles import build_candidates, aggregate_profiles
+from src.features.player_profiles import build_candidates, aggregate_profiles, add_age_features
 from src.models.player_forecast import chronological_forecasts
 from src.models.player_game_model import game_frame, fit_features, make_classifier, metrics, standings_replay
 
@@ -55,6 +55,8 @@ def evaluate(name, games, columns, run, seed, kind='linear'):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--seed', type=int, default=42)
+    parser.add_argument('--birth-dates', type=Path,
+                        help='Validated PLAYER_ID,BIRTH_DATE,SOURCE CSV. Enables the age-aware experiment.')
     args = parser.parse_args()
     stamp = datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')
     run = ROOT / 'data' / 'processed' / 'player_runs' / f'v1_{stamp}_{uuid.uuid4().hex[:6]}'
@@ -74,6 +76,13 @@ def main():
     results['team_ml'] = evaluate('team_ml', baseline, team_columns, run, args.seed, 'boosted')
     write_json(run / 'metrics.json', results)
     candidates = build_candidates(team, players)
+    age_metadata = {'enabled': False}
+    if args.birth_dates:
+        births = load_dated_context(args.birth_dates, 'birth_dates')
+        candidates = add_age_features(candidates, births)
+        age_metadata = {'enabled': True, 'source': str(args.birth_dates), 'source_hash': file_hash(args.birth_dates),
+                        'semantics': 'Static birth dates joined before model fitting; no game outcomes used'}
+    write_json(run / 'age_metadata.json', age_metadata)
     print(f'Built {len(candidates):,} causal candidate rows', flush=True)
     forecasts, player_metrics, latest = chronological_forecasts(candidates, args.seed)
     forecasts.to_parquet(run / 'player_forecasts.parquet', index=False)

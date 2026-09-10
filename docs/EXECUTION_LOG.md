@@ -66,3 +66,10 @@ Use the project-local Python 3.12 environment; `requirements-player.lock.txt` re
 Fourteen focused tests passed at this point, including future-mutation, unusual seasons, neutral games, dated context, trade membership, rotation feasibility, persistent uncertainty, reproducibility, and league-win conservation. The unchanged legacy suite was not run because it retrains/overwrites saved models and assumes obsolete random-split behavior.
 
 Final verification: source compilation passed, all 14 focused tests passed, and whitespace checks passed. A second real-data scenario run after adding source-date validation reproduced the same seeded standings metrics in `scenario_20260910T201459Z/`. README and MODEL_CARD.md now distinguish implemented ML from experimental and data-blocked work. No legacy trained model was overwritten during this execution.
+
+## Follow-up — age-aware in-season player forecasts: executed
+
+- Added strict static birth-date joins to the causal candidate data. `AGE` and `AGE_SQUARED` are available only when a validated birth-date contract is supplied; missing coverage fails rather than defaulting an unknown player to an average age.
+- The no-age baseline re-ran unchanged, confirming a matched comparison. In the age-aware 2024-25 run, minutes MAE was 5.825 versus 5.827 without age and conditional scoring RMSE was 7.423 in both cases. Game-level results were not better: the development hybrid test log loss was 0.601159 versus 0.601090 without age.
+- The paired player-versus-team improvement remains inconclusive: -0.001463 log loss with approximate weekly-block interval [-0.006118, 0.002934]. Age is retained as an optional, documented experiment, not selected or promoted.
+- `15` focused tests passed after this change, including static-age coverage and implausible/missing-age validation.

@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from pandas.testing import assert_frame_equal
 
-from src.features.player_profiles import build_candidates, project_minutes, INPUTS
+from src.features.player_profiles import build_candidates, project_minutes, INPUTS, add_age_features
 from src.ingest.player_data import load_dated_context
 
 
@@ -67,6 +67,17 @@ class PlayerPipelineTests(unittest.TestCase):
                                KNOWN_AT='2023-06-01', SOURCE='fixture')]).to_csv(path, index=False)
             with self.assertRaises(ValueError):
                 load_dated_context(path, 'coaches')
+
+    def test_age_features_are_static_and_validate_coverage(self):
+        team, players = fixture()
+        candidates = build_candidates(team, players)
+        dates = pd.DataFrame({'PLAYER_ID': sorted(candidates.PLAYER_ID.unique()),
+                              'BIRTH_DATE': ['1998-01-01'] * candidates.PLAYER_ID.nunique()})
+        enriched = add_age_features(candidates, dates)
+        self.assertTrue(enriched.AGE.between(20, 30).all())
+        self.assertTrue((enriched.AGE_SQUARED == enriched.AGE ** 2).all())
+        with self.assertRaises(ValueError):
+            add_age_features(candidates, dates.iloc[1:])
 
 
 if __name__ == '__main__':

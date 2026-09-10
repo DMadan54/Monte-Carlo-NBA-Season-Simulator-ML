@@ -35,6 +35,8 @@ python -m venv .venv
 
 The runner requires cached team and player parquet logs in `data/raw/`. It validates them, rebuilds corrected team features in memory, and creates a unique directory under `data/processed/player_runs/`. It never replaces a legacy saved model. The original game-log cache retrieval timestamps are unknown and recorded as such.
 
+Pass `--birth-dates BIRTH_DATE_CSV` to test static age and age-squared features in the player minutes/scoring models. This optional variant was evaluated but did not improve the first held-out game test, so it is not the selected model.
+
 For age-based forecasts, retrieve static birth dates, then supply the printed CSV and experiment directory:
 
 ```powershell
