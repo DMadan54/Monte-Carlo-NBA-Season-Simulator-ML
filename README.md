@@ -1,76 +1,65 @@
 # Monte Carlo NBA Season ML Simulator
 
-Simulates the rest of an NBA season thousands of times using a machine-learned
-game-outcome model, producing predicted final standings, playoff seeding
-probabilities, and bracket odds — alongside a separate ML model that predicts
-the MVP/ DPOY/ awards race from player-season stats.
+A Python portfolio project developing independently trained player and game models for NBA forecasting. The pipeline combines causal player profiles, learned minutes/scoring forecasts, chronological validation, and reproducible Monte Carlo roster scenarios.
 
-## What this does
+## Implemented
 
-- **Game outcome model**: predicts single-game win probability from
-  pre-game team form (rolling win %, point differential, rest days,
-  home/away)
-- **Season simulator**: runs the remaining schedule thousands of times
-  (Monte Carlo) using the game model as the engine, aggregating into
-  standings and playoff probabilities
-- **Awards predictor**: separate model trained on historical MVP/DPOY
-  voting share, predicting the current season's award race from
-  player stats
-- **Backtesting**: both models are validated against real past seasons
-  they were not trained on
+- Cached NBA team/player logs and validated player-game data contracts.
+- Team rolling form, Four Factors, and Elo with explicit season labels and neutral-site handling.
+- LightGBM player minutes and scoring-rate forecasts, generated out-of-fold by season.
+- Team-only, roster-only, and hybrid game classifiers with matched chronological evaluation.
+- Age-aware next-season player production regressors.
+- Fixed-cutoff season scenarios, optional persistent player uncertainty, and explicit trade scenarios.
+- Tests for leakage, dated context, roster changes, feasible minutes, and simulation conservation.
 
-## Tech stack
+Coaching input validation and an estimator exist, but dated coaching assignments are missing, so no real coaching estimates have been trained. Possession-level RAPM, detailed lineup compatibility, calibrated roster/injury uncertainty, awards prediction, and the dashboard remain future work.
 
-- Python, pandas, `nba_api` for data
-- LightGBM for the predictive models
-- Streamlit for the interactive dashboard
+## Research and results
 
-## Project structure
+Read [research decisions](docs/PLAYER_MODEL_RESEARCH.md), [ordered implementation prompts](docs/IMPLEMENTATION_PROMPTS.md), [execution record](docs/EXECUTION_LOG.md), and the [model card](docs/MODEL_CARD.md).
 
-```
-data/
-├── raw/              # cached raw pulls from nba_api (not committed — see .gitignore)
-└── processed/         # engineered feature tables
+The first player-aware experiment used 254,513 player appearances across ten seasons. On the held-out 2024-25 season, the validation-selected hybrid achieved log loss 0.6011 versus 0.6026 for the team-only logistic baseline. This small improvement was not statistically conclusive in an approximate weekly-block check. Rolling standings error did not improve. The age-aware next-season scoring model improved its held-out error, while other development targets had mixed results.
 
-src/
-├── ingest/            # pulling and caching data
-├── features/           # feature engineering (rolling stats, etc.)
-├── models/             # game model, season simulator, awards model
-└── backtest/            # validating against past seasons
+These are independently trained models using standard ML libraries, not imported proprietary player ratings. The project does not claim novel learning algorithms or state-of-the-art NBA accuracy.
 
-notebooks/              # exploration
-app/                     # Streamlit dashboard
+## Run the experimental pipeline
+
+Use Python 3.12 and a project-local virtual environment. The current workspace already has `.venv`; `requirements-player.lock.txt` captures its tested dependencies separately from the legacy `requirements.txt`.
+
+```powershell
+python -m venv .venv
+.venv/Scripts/python.exe -m pip install -r requirements-player.lock.txt
+.venv/Scripts/python.exe -m unittest discover -s tests -v
+.venv/Scripts/python.exe -m scripts.run_player_experiments
 ```
 
-## Getting started
+The runner requires cached team and player parquet logs in `data/raw/`. It validates them, rebuilds corrected team features in memory, and creates a unique directory under `data/processed/player_runs/`. It never replaces a legacy saved model. The original game-log cache retrieval timestamps are unknown and recorded as such.
 
-```bash
-pip install -r requirements.txt
+For age-based forecasts, retrieve static birth dates, then supply the printed CSV and experiment directory:
 
-# Pull team game logs for a range of seasons (caches locally as Parquet)
-python src/ingest/pull_team_game_logs.py --start_season 2018 --end_season 2024
-
-# Build the rolling-feature table used to train the game model
-python src/features/build_team_features.py
-
-# Flag (but do not remove) post-elimination games for backtest review.
-# Add --fetch-player-logs to enrich flags with high-minute player absences.
-python src/backtest/flag_tanked_games.py
+```powershell
+.venv/Scripts/python.exe -m scripts.pull_player_birth_dates
+.venv/Scripts/python.exe -m scripts.run_development_experiment --run-dir RUN_DIRECTORY --birth-dates BIRTH_DATE_CSV
+.venv/Scripts/python.exe -m scripts.validate_player_results --run-dir RUN_DIRECTORY
+.venv/Scripts/python.exe -m scripts.run_cutoff_scenario --run-dir RUN_DIRECTORY --cutoff 2025-01-01 --season 2024-25 --n-sims 2000
 ```
 
-## Roadmap
+`RUN_DIRECTORY` and `BIRTH_DATE_CSV` are placeholders for actual output paths. A scenario can add `--trade PLAYER_ID DESTINATION_TEAM_ID`, repeated for multiple moves. IDs must exist in the cutoff snapshot. This is a conditional what-if calculation, not a validated trade recommendation. `--player-points-sd` is a sensitivity assumption, not learned uncertainty.
 
-- [X] Data ingestion (team game logs)
-- [X] Feature engineering (rolling team form)
-- [X] Train game-outcome model (LightGBM) — `src/models/game_model.py`
-- [X] Monte Carlo season simulator scaffolding — `src/models/season_sim.py`
-  (needs a real remaining-schedule pull wired in — see TODO in file)
-- [ ] Pull historical awards voting data
-- [ ] Train awards-race model
-- [ ] Backtest both models against real past seasons
-- [ ] Streamlit dashboard
-- [ ] Deploy live demo
+## Forecast interpretation
 
-## Results
+Rolling historical evaluation uses each game's past information as it becomes available. It is not a preseason forecast. Fixed-cutoff scenarios freeze player/team profiles and use a supplied remaining schedule; the historical demonstration uses the final played calendar, not an archived as-published schedule. No future actual performance or transactions enter its cutoff snapshot.
 
-_(to be added once the models are trained and backtested)_
+The baseline January 2025 scenario's nominal 90% outcome-only intervals covered only 60% of teams. Better uncertainty and roster data are required before making confident season-level claims.
+
+## Structure
+
+- `src/ingest/`: source clients, caches, and validated contracts.
+- `src/features/`: team features and causal player profiles.
+- `src/models/`: player forecasts, game models, annual/coaching support, and simulation.
+- `scripts/`: experiment, metadata, development, validation, and scenario entry points.
+- `tests/`: focused automated regression checks.
+- `docs/`: evidence, prompts, execution record, and model card.
+- `data/`: local caches and versioned artifacts; large new caches/models are ignored by git.
+
+Legacy pipeline tests can retrain and overwrite existing models and assume old validation behavior. Use the focused `tests/` suite for this work. Legacy cached team features need an explicit rebuild before legacy training after the schema corrections.
