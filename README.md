@@ -9,7 +9,7 @@ A Python portfolio project developing independently trained player and game mode
 - LightGBM player minutes and scoring-rate forecasts, generated out-of-fold by season.
 - Team-only, roster-only, and hybrid game classifiers with matched chronological evaluation.
 - Age-aware next-season player production regressors.
-- Fixed-cutoff season scenarios, optional persistent player uncertainty, and explicit trade scenarios.
+- Fixed-cutoff season scenarios with learned persistent player-residual uncertainty, plus explicit trade scenarios.
 - Tests for leakage, dated context, roster changes, feasible minutes, and simulation conservation.
 
 Coaching input validation and an estimator exist, but dated coaching assignments are missing, so no real coaching estimates have been trained. Possession-level RAPM, detailed lineup compatibility, calibrated roster/injury uncertainty, awards prediction, and the dashboard remain future work.
@@ -46,13 +46,13 @@ For age-based forecasts, retrieve static birth dates, then supply the printed CS
 .venv/Scripts/python.exe -m scripts.run_cutoff_scenario --run-dir RUN_DIRECTORY --cutoff 2025-01-01 --season 2024-25 --n-sims 2000
 ```
 
-`RUN_DIRECTORY` and `BIRTH_DATE_CSV` are placeholders for actual output paths. A scenario can add `--trade PLAYER_ID DESTINATION_TEAM_ID`, repeated for multiple moves. IDs must exist in the cutoff snapshot. This is a conditional what-if calculation, not a validated trade recommendation. `--player-points-sd` is a sensitivity assumption, not learned uncertainty.
+`RUN_DIRECTORY` and `BIRTH_DATE_CSV` are placeholders for actual output paths. Add `--learned-player-uncertainty` to propagate residual uncertainty learned from earlier player forecasts, or `--player-points-sd` for a separate sensitivity assumption. A scenario can add `--trade PLAYER_ID DESTINATION_TEAM_ID`, repeated for multiple moves. IDs must exist in the cutoff snapshot. This is a conditional what-if calculation, not a validated trade recommendation.
 
 ## Forecast interpretation
 
 Rolling historical evaluation uses each game's past information as it becomes available. It is not a preseason forecast. Fixed-cutoff scenarios freeze player/team profiles and use a supplied remaining schedule; the historical demonstration uses the final played calendar, not an archived as-published schedule. No future actual performance or transactions enter its cutoff snapshot.
 
-The baseline January 2025 scenario's nominal 90% outcome-only intervals covered only 60% of teams. Better uncertainty and roster data are required before making confident season-level claims.
+The baseline January 2025 scenario's nominal 90% outcome-only intervals covered only 60% of teams. Learned persistent player-residual uncertainty raised coverage to 86.7% in the same single-cutoff experiment. Repeat-cutoff evaluation, better roster data, and injury inputs are still required before making confident season-level claims.
 
 ## Structure
 

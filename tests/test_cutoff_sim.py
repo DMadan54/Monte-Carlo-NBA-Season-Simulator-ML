@@ -28,6 +28,7 @@ def scenario():
                        SOURCE_MAX_DATE='2024-12-29', BASE_MIN=30., ML_MIN=30., DAYS_ABSENT=3.)
             row.update({c: 1. for c in PROFILE})
             row['PTS_36'] = row['ML_PTS36'] = 25. if tid == 'A' else 15.
+            row['ML_PTS36_SD'] = 4.
             profiles.append(row)
     schedule = pd.DataFrame([dict(GAME_ID=str(i), HOME_TEAM='A', AWAY_TEAM='B', NEUTRAL_GAME=0,
         GAME_DATE=pd.Timestamp('2025-01-01') + pd.Timedelta(days=i * 2)) for i in range(4)])
@@ -52,6 +53,18 @@ class CutoffTests(unittest.TestCase):
         self.assertEqual(len(calls), 10)
         self.assertTrue(all(call.DIFF_ROSTER_PTS_36.nunique() == 1 for call in calls))
         self.assertGreater(len(set(float(call.iloc[0, 0]) for call in calls)), 1)
+
+    def test_learned_uncertainty_requires_source_and_broadens_intervals(self):
+        args = scenario()
+        learned = simulate_cutoff(*args, '2025-01-01', n_sims=750, seed=12,
+                                  learned_player_uncertainty=True)
+        outcome_only = simulate_cutoff(*args, '2025-01-01', n_sims=750, seed=12)
+        self.assertGreater(learned.std_wins.sum(), outcome_only.std_wins.sum())
+        bundle, snapshot, profiles, schedule = scenario()
+        profiles = profiles.drop(columns='ML_PTS36_SD')
+        with self.assertRaises(ValueError):
+            simulate_cutoff(bundle, snapshot, profiles, schedule, '2025-01-01',
+                            learned_player_uncertainty=True)
 
     def test_rejects_future_sources_and_model(self):
         bundle, snapshot, profiles, schedule = scenario()

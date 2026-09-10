@@ -35,9 +35,9 @@ The standings objective is not solved: summing rolling game probabilities produc
 
 ## Simulation and trades
 
-A fixed-cutoff 2025-01-01 demonstration used only earlier performance, estimated rosters, and the final historical remaining schedule as a scenario input. In 2,000 trials over 746 games, MAE was 5.017 wins; nominal 90% outcome-only intervals covered 60% of teams. This undercoverage argues for better roster/injury/development uncertainty, not arbitrary probability stretching.
+A fixed-cutoff 2025-01-01 demonstration used only earlier performance, estimated rosters, and the final historical remaining schedule as a scenario input. In matched 2,000-trial, 746-game scenarios, nominal 90% outcome-only intervals covered 60.0% of teams (MAE 5.024). A player-residual model trained on earlier out-of-fold scoring errors raised coverage to 86.7% (MAE 4.851). It samples one residual per player per trial and retains it over the remaining season. This is promising calibration evidence from one cutoff, not a production claim; it needs repeated predeclared cutoff evaluation.
 
-The simulator supports persistent per-player scoring perturbations, but their magnitude is an explicit sensitivity parameter, not a learned calibrated uncertainty estimate. A trade scenario moves a known player, reallocates minutes on both teams, and recalculates expected wins. It retains historical team context and has not demonstrated causal or reliable destination-specific player effects.
+An additional manually selected player standard deviation remains available only as a sensitivity analysis. A trade scenario moves a known player, reallocates minutes on both teams, and recalculates expected wins. It retains historical team context and has not demonstrated causal or reliable destination-specific player effects.
 
 ## Limitations and next evidence needed
 
@@ -51,7 +51,7 @@ The simulator supports persistent per-player scoring perturbations, but their ma
 
 ## Reproduction and artifacts
 
-Use `requirements-player.lock.txt` and the commands in [EXECUTION_LOG.md](EXECUTION_LOG.md). The local run is `data/processed/player_runs/v1_20260910T200443Z_6a86c4/`; it contains model bundles, per-game predictions, player forecasts, metrics, calibration bins, source hashes, and environment versions. Large caches/models are ignored by git; commit source code and documentation, not these local datasets.
+Use `requirements-player.lock.txt` and the commands in [EXECUTION_LOG.md](EXECUTION_LOG.md). The local baseline run is `data/processed/player_runs/v1_20260910T200443Z_6a86c4/`; the learned-uncertainty rerun is `data/processed/player_runs/v1_20260910T215749Z_35f88a/`. They contain model bundles, per-game predictions, player forecasts, metrics, calibration bins, source hashes, and environment versions. Large caches/models are ignored by git; commit source code and documentation, not these local datasets.
 
 The age-aware follow-up is `data/processed/player_runs/v1_20260910T215005Z_f257bf/`. Run it with `--birth-dates data/raw/player_metadata/birth_dates_20260910T200811Z.csv`; that locally cached source is intentionally ignored by git.
 

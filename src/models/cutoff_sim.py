@@ -36,8 +36,8 @@ def schedule_features(snapshot, schedule, rosters, include_fit=False):
 
 
 def simulate_cutoff(bundle, snapshot, profiles, schedule, cutoff, current_wins=None,
-                    n_sims=2000, seed=42, player_points_sd=0.):
-    """Return standings; points SD is an explicit sensitivity assumption, not learned.
+                    n_sims=2000, seed=42, player_points_sd=0., learned_player_uncertainty=False):
+    """Return standings with optional learned, persistent player uncertainty.
 
     Each player's scoring perturbation is drawn once per trial and retained for
     every scheduled game in that trial. Default zero yields outcome-only intervals.
@@ -57,6 +57,8 @@ def simulate_cutoff(bundle, snapshot, profiles, schedule, cutoff, current_wins=N
         raise ValueError('Team history reaches cutoff')
     if n_sims < 2 or seed is None or player_points_sd < 0 or not np.isfinite(player_points_sd):
         raise ValueError('Require >=2 trials, a seed, and finite nonnegative uncertainty')
+    if learned_player_uncertainty and 'ML_PTS36_SD' not in profiles:
+        raise ValueError('Learned player uncertainty requested but ML_PTS36_SD is unavailable')
     if profiles.duplicated('PLAYER_ID').any():
         raise ValueError('A player cannot belong to multiple scenario rosters')
     if snapshot.TEAM_ID.duplicated().any() or set(profiles.TEAM_ID) != set(snapshot.TEAM_ID):
@@ -87,6 +89,7 @@ def simulate_cutoff(bundle, snapshot, profiles, schedule, cutoff, current_wins=N
                                       'boosted' in bundle['name'] or 'age' in bundle['name']) else 'PTS_36'
     base_profiles = profiles.copy()
     base_profiles['SCENARIO_POINTS'] = profiles[scoring_column]
+    learned_sd = profiles.ML_PTS36_SD.to_numpy() if learned_player_uncertainty else np.zeros(len(profiles))
     def probabilities(current):
         rosters = aggregate_profiles(current, minutes_column, 'SCENARIO_POINTS')
         values = schedule_features(snapshot, schedule, rosters, include_fit)
@@ -94,11 +97,15 @@ def simulate_cutoff(bundle, snapshot, profiles, schedule, cutoff, current_wins=N
         if missing:
             raise ValueError(f'Scenario missing model features: {sorted(missing)}')
         return bundle['model'].predict_proba(values[bundle['features']])[:, 1]
-    fixed = probabilities(base_profiles) if player_points_sd == 0 else None
+    fixed = (
+        probabilities(base_profiles)
+        if player_points_sd == 0 and not learned_player_uncertainty
+        else None
+    )
     for trial in range(n_sims):
         if fixed is None:
             base_profiles['SCENARIO_POINTS'] = np.clip(profiles[scoring_column] +
-                talent_rng.normal(0, player_points_sd, len(profiles)), 0, 60)
+                talent_rng.normal(0, np.sqrt(learned_sd ** 2 + player_points_sd ** 2), len(profiles)), 0, 60)
             p = probabilities(base_profiles)
         else:
             p = fixed

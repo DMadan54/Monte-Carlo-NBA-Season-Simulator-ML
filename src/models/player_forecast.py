@@ -22,10 +22,32 @@ def fit_forecasts(train, seed=42):
             'targets': ['regulation-equivalent candidate minutes including absence', 'points per 36 conditional on >=5 minutes']}
 
 
+def fit_scoring_uncertainty(oof_rows, seed=42):
+    """Fit player-specific score volatility from strictly earlier OOF residuals.
+
+    The model targets expected absolute error and converts it to a normal-scale
+    standard deviation. Training on in-sample residuals would make intervals
+    falsely narrow, so callers must provide only past out-of-fold predictions.
+    """
+    active = oof_rows.TARGET_MIN >= 5
+    rows = oof_rows.loc[active].copy()
+    if rows.empty:
+        raise ValueError('Need active out-of-fold player rows for uncertainty')
+    rows['ABS_SCORING_ERROR'] = (rows.TARGET_PTS36 - rows.ML_PTS36).abs()
+    model = regressor(seed).fit(rows[INPUTS], rows.ABS_SCORING_ERROR,
+        sample_weight=rows.TARGET_MIN)
+    return model
+
+
 def forecast_profiles(rows, bundle):
     result = rows.copy()
     result['ML_MIN'] = np.clip(bundle['minutes'].predict(rows[INPUTS]), 0, 48)
     result['ML_PTS36'] = np.clip(bundle['scoring'].predict(rows[INPUTS]), 0, 60)
+    uncertainty = bundle.get('scoring_uncertainty')
+    if uncertainty is not None:
+        # For Normal(0, sigma), E|X| = sigma * sqrt(2 / pi).
+        expected_abs = np.clip(uncertainty.predict(rows[INPUTS]), .1, 25)
+        result['ML_PTS36_SD'] = expected_abs * np.sqrt(np.pi / 2)
     return result
 
 
@@ -54,6 +76,10 @@ def chronological_forecasts(candidates, seed=42):
             baseline_scoring_rmse=weighted_rmse(test.PTS_36),
             ml_scoring_rmse=weighted_rmse(predictions.ML_PTS36),
             trained_through=bundle['trained_through']))
+        # Only earlier seasons contribute labels to this season's uncertainty.
+        uncertainty_rows = result[(result.SEASON_YEAR < season) & result.ML_PTS36.notna()]
+        if not uncertainty_rows.empty:
+            bundle['scoring_uncertainty'] = fit_scoring_uncertainty(uncertainty_rows, seed)
         latest = bundle
         print(f'Player out-of-fold forecasts: {season}, {len(test):,} candidates', flush=True)
     return result, diagnostics, latest

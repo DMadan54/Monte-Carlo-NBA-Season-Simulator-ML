@@ -73,3 +73,11 @@ Final verification: source compilation passed, all 14 focused tests passed, and 
 - The no-age baseline re-ran unchanged, confirming a matched comparison. In the age-aware 2024-25 run, minutes MAE was 5.825 versus 5.827 without age and conditional scoring RMSE was 7.423 in both cases. Game-level results were not better: the development hybrid test log loss was 0.601159 versus 0.601090 without age.
 - The paired player-versus-team improvement remains inconclusive: -0.001463 log loss with approximate weekly-block interval [-0.006118, 0.002934]. Age is retained as an optional, documented experiment, not selected or promoted.
 - `15` focused tests passed after this change, including static-age coverage and implausible/missing-age validation.
+
+## Follow-up — learned player-residual uncertainty: executed
+
+- Added a separate scoring-residual regressor trained only on earlier out-of-fold player forecasts. It predicts each active player's absolute points-per-36 error and converts it to a normal residual standard deviation; no final-test targets enter the cutoff forecast bundle.
+- The fixed-cutoff simulator now draws one residual per player per trial and retains it across that player's remaining games. This represents persistent player-level forecasting uncertainty, rather than repeatedly adding independent game noise.
+- Matched 2,000-trial scenarios at the 2025-01-01 cutoff used the same 746-game supplied schedule and seed. Outcome-only intervals had 60.0% empirical coverage for nominal 90% team-win intervals (MAE 5.024). Learned player-residual intervals had 86.7% coverage (MAE 4.851); for example, OKC's simulated standard deviation widened from 2.94 to 4.08 wins.
+- This is one historical cutoff, so the result is encouraging calibration evidence rather than a production promotion. The next evaluation should repeat predeclared cutoffs without tuning the residual model to any of them.
+- `16` focused tests passed, including the learned-uncertainty source contract and interval-widening behavior.

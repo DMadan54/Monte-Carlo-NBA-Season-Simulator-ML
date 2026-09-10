@@ -48,7 +48,10 @@ def main():
     parser.add_argument('--season', default='2024-25')
     parser.add_argument('--n-sims', type=int, default=2000)
     parser.add_argument('--seed', type=int, default=42)
-    parser.add_argument('--player-points-sd', type=float, default=0.)
+    parser.add_argument('--player-points-sd', type=float, default=0.,
+                        help='Additional per-player PTS/36 scenario sensitivity standard deviation.')
+    parser.add_argument('--learned-player-uncertainty', action='store_true',
+                        help='Use player-specific uncertainty trained on prior out-of-fold scoring errors.')
     parser.add_argument('--trade', nargs=2, action='append', metavar=('PLAYER_ID', 'DESTINATION_TEAM_ID'), default=[])
     args = parser.parse_args()
     selection = json.loads((args.run_dir / 'selection.json').read_text())
@@ -68,12 +71,14 @@ def main():
     schedule = remaining[['GAME_ID', 'GAME_DATE', 'TEAM_ID', 'OPP_TEAM_ID', 'NEUTRAL_GAME']].rename(
         columns={'TEAM_ID': 'HOME_TEAM', 'OPP_TEAM_ID': 'AWAY_TEAM'})
     current = season[season.GAME_DATE < cutoff].groupby('TEAM_ID').WIN.sum().to_dict()
-    result = simulate_cutoff(bundle, snapshot, profiles, schedule, cutoff, current, args.n_sims, args.seed, args.player_points_sd)
+    result = simulate_cutoff(bundle, snapshot, profiles, schedule, cutoff, current, args.n_sims, args.seed,
+                             args.player_points_sd, args.learned_player_uncertainty)
     if args.trade:
         original_result = result.copy()
         for player_id, destination in args.trade:
             profiles = apply_trade(profiles, player_id, destination)
-        result = simulate_cutoff(bundle, snapshot, profiles, schedule, cutoff, current, args.n_sims, args.seed, args.player_points_sd)
+        result = simulate_cutoff(bundle, snapshot, profiles, schedule, cutoff, current, args.n_sims, args.seed,
+                                 args.player_points_sd, args.learned_player_uncertainty)
         result['baseline_expected_wins'] = result.TEAM_ID.map(original_result.set_index('TEAM_ID').expected_wins)
         result['trade_expected_wins_delta'] = result.expected_wins - result.baseline_expected_wins
     names = team.drop_duplicates('TEAM_ID').set_index('TEAM_ID').TEAM_ABBREVIATION
@@ -87,12 +92,14 @@ def main():
     profiles.to_parquet(output / 'player_snapshot.parquet', index=False)
     schedule.to_csv(output / 'schedule.csv', index=False)
     report = dict(cutoff=args.cutoff, model=name, seed=args.seed, n_sims=args.n_sims,
-        player_points_sd=args.player_points_sd, trades=args.trade, games_remaining=len(schedule),
+        player_points_sd=args.player_points_sd, learned_player_uncertainty=args.learned_player_uncertainty,
+        trades=args.trade, games_remaining=len(schedule),
         mean_absolute_error=float((result.mean_wins - result.actual_wins).abs().mean()),
         interval_coverage=float(((result.actual_wins >= result.p05) & (result.actual_wins <= result.p95)).mean()),
         assumptions=['Frozen past-only profiles', 'Last-observed roster, no future transactions or injuries',
                      'Final historical schedule supplied as scenario; not an as-published schedule archive',
-                     'Intervals cover outcome noise only at SD=0; nonzero player SD is a sensitivity assumption, not calibrated uncertainty'],
+                     'Learned uncertainty uses only prior out-of-fold scoring residuals when enabled',
+                     'Additional nonzero player SD is a sensitivity assumption rather than calibrated uncertainty'],
         promotion='Experimental demonstration; one cutoff is not comprehensive preseason validation')
     (output / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
     print(json.dumps(report, indent=2), flush=True)
