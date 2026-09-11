@@ -54,6 +54,16 @@ Rolling historical evaluation uses each game's past information as it becomes av
 
 The baseline January 2025 scenario's nominal 90% outcome-only intervals covered only 60% of teams. Learned persistent player-residual uncertainty raised coverage to 86.7% in the same single-cutoff experiment. Repeat-cutoff evaluation, better roster data, and injury inputs are still required before making confident season-level claims.
 
+## Scenario dashboard
+
+With the local versioned artifact available, run the read-only dashboard:
+
+```powershell
+.venv/Scripts/python.exe -m streamlit run dashboard/app.py
+```
+
+It loads a selected scenario directory and displays simulated standings, win intervals, actual wins, assumptions, and limitations. It never retrains or changes model artifacts.
+
 ## Structure
 
 - `src/ingest/`: source clients, caches, and validated contracts.
