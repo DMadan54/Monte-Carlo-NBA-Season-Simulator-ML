@@ -39,7 +39,7 @@ A fixed-cutoff 2025-01-01 demonstration used only earlier performance, estimated
 
 An additional manually selected player standard deviation remains available only as a sensitivity analysis. A trade scenario moves a known player, reallocates minutes on both teams, and recalculates expected wins. It retains historical team context and has not demonstrated causal or reliable destination-specific player effects.
 
-A multi-cutoff calibration runner has been implemented for the December/January/February/March cutoffs in 2018-19 through 2024-25. It uses cutoff-eligible refits, validated chronological OOF residual inputs, and reports 50/80/90% empirical intervals. The full evaluation remains incomplete, so it supplies no promotion evidence and does not change the experimental status of learned residual uncertainty.
+A multi-cutoff runner evaluated all December/January/February/March cutoffs in 2018-19 through 2024-25 as retrospective final-schedule scenarios. With 50 fixed trials per cutoff, hybrid learned residual uncertainty increased mean 90% coverage from 70.1% to 80.4% and improved standings MAE from 3.940 to 3.897 wins. This passes the predeclared uncertainty gate but remains experimental: coverage is below nominal, and the hybrid does not beat the team-linear uncertainty control on standings MAE (3.897 versus 3.910). Fixed-cutoff game Brier/log loss (0.3539/1.5506) are not comparable to the rolling next-game test and are materially weaker.
 
 ## Limitations and next evidence needed
 

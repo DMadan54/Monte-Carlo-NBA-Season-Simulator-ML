@@ -82,9 +82,11 @@ Final verification: source compilation passed, all 14 focused tests passed, and 
 - This is one historical cutoff, so the result is encouraging calibration evidence rather than a production promotion. The next evaluation should repeat predeclared cutoffs without tuning the residual model to any of them.
 - `16` focused tests passed, including the learned-uncertainty source contract and interval-widening behavior.
 
-## Prompt 1 — multi-cutoff calibration backtest: implementation committed; evaluation pending
+## Prompt 1 — multi-cutoff calibration backtest: completed, experimental
 
 - Added `scripts/run_multi_cutoff_backtest.py`, a fixed-cutoff runner covering the predeclared December 1, January 1, February 1, and March 1 cutoffs for 2018-19 through 2024-25. It saves per-cutoff standings, game probabilities, calibration bins, source hashes, seeds, and protocol metadata in an isolated run directory.
 - The runner refits cutoff-eligible player/game models and validates the chronological OOF upstream artifact against strictly earlier candidate source dates. Historical remaining schedules are labelled retrospective scenario inputs.
 - Added seeded 50/80/90% standings interval quantiles plus an explicit team-only learned-uncertainty control. Focused simulator and player pipeline checks passed (10 tests).
-- The first complete 28-cutoff evaluation has not yet finished: causal roster reconstruction and the learned-uncertainty batches are computationally expensive locally. No metrics, model-card promotion decision, or claim of generalized coverage has been made. Partial run directories are retained as failed/incomplete artifacts and are not inputs to any conclusion.
+- Completed `data/processed/multi_cutoff_runs/v1_20260911T110925Z_9a9b27/` over 28 season/cutoff pairs, 50 fixed trials each, and all four model/uncertainty configurations. This is a retrospective final-schedule scenario, not an archive of schedules known at each cutoff.
+- Hybrid learned uncertainty improved mean nominal-90% coverage from 70.1% to 80.4% and reduced standings MAE from 3.940 to 3.897 wins. It therefore passes the predeclared uncertainty gate (closer coverage with no >=0.25-win MAE regression), but remains experimental: coverage is still below nominal and the player-aware hybrid did not beat team linear on aggregate standings MAE (3.897 versus 3.910 with uncertainty).
+- The hybrid game-probability metrics were Brier 0.3539 and log loss 1.5506; these retrospective fixed-cutoff probabilities are substantially weaker than the rolling next-game test and must not be substituted for it. Per-cutoff outcomes, calibration bins, source hashes, and protocol are retained in the versioned artifact.
