@@ -10,4 +10,5 @@ venv/
 **/[Aa][Gg][Ee][Nn][Tt][Ss].md
 # Versioned local ML artifacts and source-response caches (summaries live in docs).
 /data/processed/player_runs/
+/data/processed/multi_cutoff_runs/
 /data/raw/player_metadata/
