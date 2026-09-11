@@ -96,3 +96,8 @@ Final verification: source compilation passed, all 14 focused tests passed, and 
 - Extended the annual player experiment with full-population participation calibration and age/minute-error slices; exits remain zero-minute observations.
 - On 2024-25, minutes MAE improved from 418.77 to 398.97 and points-per-36 RMSE improved from 2.693 to 2.542. Rebounds/assists were mixed.
 - Participation calibration is poor (predicted 89.2% versus actual 65.4%; Brier 0.2265), so this component is not integrated into the simulator or promoted.
+
+## Prompt 4 — roster compatibility: rejected for promotion
+
+- Formalized transferable aggregate compatibility interactions and required scenario language: “estimated model contribution under stated roster assumptions,” never a causal trade effect.
+- The existing chronological roster-profile interaction ablation did not improve validation over the selected additive hybrid. It remains outside the simulator.
