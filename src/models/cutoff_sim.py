@@ -7,6 +7,7 @@ import numpy as np
 import pandas as pd
 
 from src.features.player_profiles import aggregate_profiles
+from src.features.player_profiles import project_minutes
 from src.models.player_game_model import TEAM_COLUMNS, fit_features
 
 
@@ -74,6 +75,9 @@ def simulate_cutoff(bundle, snapshot, profiles, schedule, cutoff, current_wins=N
     known = current_wins or {}
     if not set(known).issubset(set(snapshot.TEAM_ID)) or any(v < 0 or int(v) != v for v in known.values()):
         raise ValueError('Invalid current wins')
+    # Scenario snapshots often retain source-table indices; batched player draws
+    # require compact positional indices.
+    profiles = profiles.reset_index(drop=True)
     seeds = np.random.SeedSequence(seed).spawn(2)
     talent_rng, game_rng = [np.random.default_rng(s) for s in seeds]
     ids = sorted(snapshot.TEAM_ID)
@@ -89,7 +93,11 @@ def simulate_cutoff(bundle, snapshot, profiles, schedule, cutoff, current_wins=N
                                       'boosted' in bundle['name'] or 'age' in bundle['name']) else 'PTS_36'
     base_profiles = profiles.copy()
     base_profiles['SCENARIO_POINTS'] = profiles[scoring_column]
-    learned_sd = profiles.ML_PTS36_SD.to_numpy() if learned_player_uncertainty else np.zeros(len(profiles))
+    # A team-only classifier cannot respond to player residuals.  Retain its
+    # requested configuration as an explicit matched control, but do not spend
+    # Monte Carlo work on perturbations that cannot reach any model feature.
+    effective_learned_uncertainty = learned_player_uncertainty and any('ROSTER_' in feature for feature in bundle['features'])
+    learned_sd = profiles.ML_PTS36_SD.to_numpy() if effective_learned_uncertainty else np.zeros(len(profiles))
     def probabilities(current):
         rosters = aggregate_profiles(current, minutes_column, 'SCENARIO_POINTS')
         values = schedule_features(snapshot, schedule, rosters, include_fit)
@@ -99,26 +107,68 @@ def simulate_cutoff(bundle, snapshot, profiles, schedule, cutoff, current_wins=N
         return bundle['model'].predict_proba(values[bundle['features']])[:, 1]
     fixed = (
         probabilities(base_profiles)
-        if player_points_sd == 0 and not learned_player_uncertainty
+        if player_points_sd == 0 and not effective_learned_uncertainty
         else None
     )
-    for trial in range(n_sims):
-        if fixed is None:
-            base_profiles['SCENARIO_POINTS'] = np.clip(profiles[scoring_column] +
-                talent_rng.normal(0, np.sqrt(learned_sd ** 2 + player_points_sd ** 2), len(profiles)), 0, 60)
-            p = probabilities(base_profiles)
-        else:
-            p = fixed
-        outcomes = game_rng.random(len(schedule)) < p
-        np.add.at(win_matrix[trial], home, outcomes.astype(int))
-        np.add.at(win_matrix[trial], away, (~outcomes).astype(int))
-        np.add.at(expected[trial], home, p)
-        np.add.at(expected[trial], away, 1 - p)
+    # The learned-residual backtest may evaluate hundreds of fixed cutoffs.  Its
+    # roster perturbations affect only score-derived roster summaries, so batch
+    # them through the classifier while retaining one persistent player draw per
+    # trial.  The manual sensitivity path remains deliberately scalar for its
+    # diagnostic call-level semantics.
+    if effective_learned_uncertainty and player_points_sd == 0 and not include_fit:
+        base_values = schedule_features(snapshot, schedule, aggregate_profiles(base_profiles, minutes_column, 'SCENARIO_POINTS'))
+        weighted, memberships = {}, {}
+        for tid, rows in profiles.groupby('TEAM_ID', sort=False):
+            minutes = project_minutes(rows[minutes_column].to_numpy()) / 240
+            weighted[tid] = minutes
+            memberships[tid] = rows.index.to_numpy()
+        draws = np.clip(profiles[scoring_column].to_numpy()[None, :] +
+                        talent_rng.normal(0, learned_sd, size=(n_sims, len(profiles))), 0, 60)
+        roster = {}
+        for tid, indices in memberships.items():
+            values = draws[:, indices]
+            weights = weighted[tid]
+            mean = values @ weights
+            roster[tid] = (mean, values.max(axis=1), np.sqrt(((values - mean[:, None]) ** 2) @ weights))
+        batched = pd.concat([base_values] * n_sims, ignore_index=True)
+        game_count = len(schedule)
+        for column, position in [('ROSTER_PTS_36', 0), ('ROSTER_TOP_PTS', 1), ('ROSTER_PTS_SPREAD', 2)]:
+            diff, avg = f'DIFF_{column}', f'AVG_{column}'
+            if diff in bundle['features'] or avg in bundle['features']:
+                home_values = np.stack([roster[t][position] for t in schedule.HOME_TEAM], axis=1)
+                away_values = np.stack([roster[t][position] for t in schedule.AWAY_TEAM], axis=1)
+                if diff in batched:
+                    batched[diff] = (home_values - away_values).reshape(n_sims * game_count)
+                if avg in batched:
+                    batched[avg] = ((home_values + away_values) / 2).reshape(n_sims * game_count)
+        probabilities_matrix = bundle['model'].predict_proba(batched[bundle['features']])[:, 1].reshape(n_sims, game_count)
+        outcomes = game_rng.random((n_sims, game_count)) < probabilities_matrix
+        np.add.at(win_matrix, (np.arange(n_sims)[:, None], np.broadcast_to(home, outcomes.shape)), outcomes.astype(int))
+        np.add.at(win_matrix, (np.arange(n_sims)[:, None], np.broadcast_to(away, outcomes.shape)), (~outcomes).astype(int))
+        expected += np.column_stack([np.zeros(n_sims)] * len(ids))  # retain explicit base shape
+        for team_index in range(len(ids)):
+            expected[:, team_index] += (probabilities_matrix[:, home == team_index].sum(axis=1) if (home == team_index).any() else 0)
+            expected[:, team_index] += ((1 - probabilities_matrix[:, away == team_index]).sum(axis=1) if (away == team_index).any() else 0)
+    else:
+        for trial in range(n_sims):
+            if fixed is None:
+                base_profiles['SCENARIO_POINTS'] = np.clip(profiles[scoring_column] +
+                    talent_rng.normal(0, np.sqrt(learned_sd ** 2 + player_points_sd ** 2), len(profiles)), 0, 60)
+                p = probabilities(base_profiles)
+            else:
+                p = fixed
+            outcomes = game_rng.random(len(schedule)) < p
+            np.add.at(win_matrix[trial], home, outcomes.astype(int))
+            np.add.at(win_matrix[trial], away, (~outcomes).astype(int))
+            np.add.at(expected[trial], home, p)
+            np.add.at(expected[trial], away, 1 - p)
     if not np.all(win_matrix.sum(axis=1) == sum(known.values()) + len(schedule)):
         raise AssertionError('League wins not conserved')
     result = pd.DataFrame(dict(TEAM_ID=ids, mean_wins=win_matrix.mean(axis=0), expected_wins=expected.mean(axis=0),
         std_wins=win_matrix.std(axis=0, ddof=1), p05=np.quantile(win_matrix, .05, axis=0),
-        p95=np.quantile(win_matrix, .95, axis=0)))
+        p10=np.quantile(win_matrix, .10, axis=0), p25=np.quantile(win_matrix, .25, axis=0),
+        p50=np.quantile(win_matrix, .50, axis=0), p75=np.quantile(win_matrix, .75, axis=0),
+        p90=np.quantile(win_matrix, .90, axis=0), p95=np.quantile(win_matrix, .95, axis=0)))
     return result.sort_values('mean_wins', ascending=False).reset_index(drop=True)
 
 

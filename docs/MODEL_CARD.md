@@ -39,6 +39,8 @@ A fixed-cutoff 2025-01-01 demonstration used only earlier performance, estimated
 
 An additional manually selected player standard deviation remains available only as a sensitivity analysis. A trade scenario moves a known player, reallocates minutes on both teams, and recalculates expected wins. It retains historical team context and has not demonstrated causal or reliable destination-specific player effects.
 
+A multi-cutoff calibration runner has been implemented for the December/January/February/March cutoffs in 2018-19 through 2024-25. It uses cutoff-eligible refits, validated chronological OOF residual inputs, and reports 50/80/90% empirical intervals. The full evaluation remains incomplete, so it supplies no promotion evidence and does not change the experimental status of learned residual uncertainty.
+
 ## Limitations and next evidence needed
 
 - Last-observed rosters miss a transaction before the new player's first appearance; accurate dated transactions and availability are the highest-priority data improvement.

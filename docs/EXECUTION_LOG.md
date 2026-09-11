@@ -81,3 +81,10 @@ Final verification: source compilation passed, all 14 focused tests passed, and 
 - Matched 2,000-trial scenarios at the 2025-01-01 cutoff used the same 746-game supplied schedule and seed. Outcome-only intervals had 60.0% empirical coverage for nominal 90% team-win intervals (MAE 5.024). Learned player-residual intervals had 86.7% coverage (MAE 4.851); for example, OKC's simulated standard deviation widened from 2.94 to 4.08 wins.
 - This is one historical cutoff, so the result is encouraging calibration evidence rather than a production promotion. The next evaluation should repeat predeclared cutoffs without tuning the residual model to any of them.
 - `16` focused tests passed, including the learned-uncertainty source contract and interval-widening behavior.
+
+## Prompt 1 — multi-cutoff calibration backtest: implementation committed; evaluation pending
+
+- Added `scripts/run_multi_cutoff_backtest.py`, a fixed-cutoff runner covering the predeclared December 1, January 1, February 1, and March 1 cutoffs for 2018-19 through 2024-25. It saves per-cutoff standings, game probabilities, calibration bins, source hashes, seeds, and protocol metadata in an isolated run directory.
+- The runner refits cutoff-eligible player/game models and validates the chronological OOF upstream artifact against strictly earlier candidate source dates. Historical remaining schedules are labelled retrospective scenario inputs.
+- Added seeded 50/80/90% standings interval quantiles plus an explicit team-only learned-uncertainty control. Focused simulator and player pipeline checks passed (10 tests).
+- The first complete 28-cutoff evaluation has not yet finished: causal roster reconstruction and the learned-uncertainty batches are computationally expensive locally. No metrics, model-card promotion decision, or claim of generalized coverage has been made. Partial run directories are retained as failed/incomplete artifacts and are not inputs to any conclusion.

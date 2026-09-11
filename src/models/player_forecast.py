@@ -12,17 +12,18 @@ def regressor(seed):
         deterministic=True, force_col_wise=True)
 
 
-def fit_forecasts(train, seed=42):
-    minutes = regressor(seed).fit(train[INPUTS], train.TARGET_MIN)
+def fit_forecasts(train, seed=42, inputs=None):
+    inputs = INPUTS if inputs is None else inputs
+    minutes = regressor(seed).fit(train[inputs], train.TARGET_MIN)
     active = train.TARGET_MIN >= 5
-    scoring = regressor(seed).fit(train.loc[active, INPUTS], train.loc[active, 'TARGET_PTS36'],
+    scoring = regressor(seed).fit(train.loc[active, inputs], train.loc[active, 'TARGET_PTS36'],
         sample_weight=train.loc[active, 'TARGET_MIN'])
-    return {'minutes': minutes, 'scoring': scoring, 'features': INPUTS,
+    return {'minutes': minutes, 'scoring': scoring, 'features': inputs,
             'trained_through': str(train.GAME_DATE.max().date()),
             'targets': ['regulation-equivalent candidate minutes including absence', 'points per 36 conditional on >=5 minutes']}
 
 
-def fit_scoring_uncertainty(oof_rows, seed=42):
+def fit_scoring_uncertainty(oof_rows, seed=42, inputs=None):
     """Fit player-specific score volatility from strictly earlier OOF residuals.
 
     The model targets expected absolute error and converts it to a normal-scale
@@ -34,19 +35,21 @@ def fit_scoring_uncertainty(oof_rows, seed=42):
     if rows.empty:
         raise ValueError('Need active out-of-fold player rows for uncertainty')
     rows['ABS_SCORING_ERROR'] = (rows.TARGET_PTS36 - rows.ML_PTS36).abs()
-    model = regressor(seed).fit(rows[INPUTS], rows.ABS_SCORING_ERROR,
+    inputs = INPUTS if inputs is None else inputs
+    model = regressor(seed).fit(rows[inputs], rows.ABS_SCORING_ERROR,
         sample_weight=rows.TARGET_MIN)
     return model
 
 
 def forecast_profiles(rows, bundle):
     result = rows.copy()
-    result['ML_MIN'] = np.clip(bundle['minutes'].predict(rows[INPUTS]), 0, 48)
-    result['ML_PTS36'] = np.clip(bundle['scoring'].predict(rows[INPUTS]), 0, 60)
+    inputs = bundle.get('features', INPUTS)
+    result['ML_MIN'] = np.clip(bundle['minutes'].predict(rows[inputs]), 0, 48)
+    result['ML_PTS36'] = np.clip(bundle['scoring'].predict(rows[inputs]), 0, 60)
     uncertainty = bundle.get('scoring_uncertainty')
     if uncertainty is not None:
         # For Normal(0, sigma), E|X| = sigma * sqrt(2 / pi).
-        expected_abs = np.clip(uncertainty.predict(rows[INPUTS]), .1, 25)
+        expected_abs = np.clip(uncertainty.predict(rows[inputs]), .1, 25)
         result['ML_PTS36_SD'] = expected_abs * np.sqrt(np.pi / 2)
     return result
 

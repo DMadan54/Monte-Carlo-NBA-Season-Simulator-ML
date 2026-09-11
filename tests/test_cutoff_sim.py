@@ -45,6 +45,9 @@ class CutoffTests(unittest.TestCase):
         assert_frame_equal(first, second)
         self.assertAlmostEqual(first.mean_wins.sum(), 26.)
         self.assertTrue(((first.mean_wins - first.expected_wins).abs() < .06).all())
+        self.assertTrue({'p10', 'p25', 'p50', 'p75', 'p90'}.issubset(first.columns))
+        self.assertTrue((first.p25 <= first.p50).all())
+        self.assertTrue((first.p50 <= first.p75).all())
 
     def test_uncertainty_is_persistent_within_trial(self):
         args = scenario()
