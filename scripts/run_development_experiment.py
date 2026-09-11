@@ -10,6 +10,7 @@ import pandas as pd
 
 from src.ingest.player_data import load_cached, load_dated_context, file_hash
 from src.models.player_forecast import regressor
+from src.models.preseason_state_model import participation_metrics, error_slices
 
 
 def annual_dataset(players, births):
@@ -76,7 +77,9 @@ def main():
         minute_model = regressor(42).fit(train[features], train.TARGET_MIN)
         minute_prediction = np.maximum(minute_model.predict(test[features]), 0)
         scores['season_minutes'] = {'players': len(test), 'baseline_mae': float(np.abs(test.MIN - test.TARGET_MIN).mean()),
-                                   'ml_mae': float(np.abs(minute_prediction - test.TARGET_MIN).mean())}
+                                   'ml_mae': float(np.abs(minute_prediction - test.TARGET_MIN).mean()),
+                                   'participation': participation_metrics(test.TARGET_MIN, minute_prediction),
+                                   'age_slices': error_slices(test, minute_prediction, 'TARGET_MIN')}
         models['minutes'] = minute_model
         results[split] = scores
     dataset.to_parquet(output / 'annual_training_data.parquet', index=False)

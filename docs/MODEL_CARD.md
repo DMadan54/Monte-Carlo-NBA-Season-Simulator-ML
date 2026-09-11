@@ -48,6 +48,7 @@ A multi-cutoff runner evaluated all December/January/February/March cutoffs in 2
 - No independently estimated RAPM or lineup model yet: possession/lineup data are missing.
 - Coaching input validation and an estimator exist, but historical effective assignments are missing, so no real coach estimates are claimed.
 - Annual development models remain separate experiments, not yet a validated evolution process driving full-season forecasts.
+- The preseason state-transition experiment improved 2024-25 minute MAE and scoring-rate RMSE, but substantially over-predicted >=300-minute participation. It remains separate from the simulator.
 - One final test season and one cutoff scenario are limited evidence. Keep the test results frozen; additional model choices require new validation evidence, not repeated tuning to 2024-25.
 - Legacy caches and saved models were preserved. This model has not replaced the default production artifact.
 

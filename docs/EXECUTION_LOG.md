@@ -90,3 +90,9 @@ Final verification: source compilation passed, all 14 focused tests passed, and 
 - Completed `data/processed/multi_cutoff_runs/v1_20260911T110925Z_9a9b27/` over 28 season/cutoff pairs, 50 fixed trials each, and all four model/uncertainty configurations. This is a retrospective final-schedule scenario, not an archive of schedules known at each cutoff.
 - Hybrid learned uncertainty improved mean nominal-90% coverage from 70.1% to 80.4% and reduced standings MAE from 3.940 to 3.897 wins. It therefore passes the predeclared uncertainty gate (closer coverage with no >=0.25-win MAE regression), but remains experimental: coverage is still below nominal and the player-aware hybrid did not beat team linear on aggregate standings MAE (3.897 versus 3.910 with uncertainty).
 - The hybrid game-probability metrics were Brier 0.3539 and log loss 1.5506; these retrospective fixed-cutoff probabilities are substantially weaker than the rolling next-game test and must not be substituted for it. Per-cutoff outcomes, calibration bins, source hashes, and protocol are retained in the versioned artifact.
+
+## Prompt 3 — preseason player state transitions: experimental
+
+- Extended the annual player experiment with full-population participation calibration and age/minute-error slices; exits remain zero-minute observations.
+- On 2024-25, minutes MAE improved from 418.77 to 398.97 and points-per-36 RMSE improved from 2.693 to 2.542. Rebounds/assists were mixed.
+- Participation calibration is poor (predicted 89.2% versus actual 65.4%; Brier 0.2265), so this component is not integrated into the simulator or promoted.
