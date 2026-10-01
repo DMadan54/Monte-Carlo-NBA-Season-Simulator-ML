@@ -19,6 +19,8 @@ import pyarrow.parquet as pq
 from sklearn.metrics import brier_score_loss, log_loss
 
 from scripts.run_cutoff_scenario import prepare_snapshot
+from scripts.audit_fixed_cutoff_artifact import (canonical_game_id, multi_cutoff_manifest,
+                                                  probability_output_hash)
 from src.features.build_team_features import add_basic_fields, add_rolling_features
 from src.features.player_profiles import INPUTS, build_candidates, aggregate_profiles
 from src.ingest.player_data import file_hash, load_cached
@@ -74,7 +76,8 @@ def predicted_schedule(bundle, snapshot, profiles, schedule):
     # exact probabilities used for the retrospective scenario.
     roster = aggregate_profiles(profiles, 'ML_MIN', 'SCENARIO_POINTS')
     values = schedule_features(snapshot, schedule, roster, include_fit=False)
-    return bundle['model'].predict_proba(values[bundle['features']])[:, 1]
+    values = values[bundle['features']]
+    return values, bundle['model'].predict_proba(values)[:, 1]
 
 
 def main():
@@ -90,6 +93,8 @@ def main():
         raise ValueError('--n-sims must be at least two')
     run = args.output_root / f'v1_{datetime.now(timezone.utc):%Y%m%dT%H%M%SZ}_{uuid.uuid4().hex[:6]}'
     run.mkdir(parents=True, exist_ok=False)
+    audit_dir = run / 'scoring_audits'
+    audit_dir.mkdir()
     raw_team, players, audit = load_cached(ROOT / 'data' / 'raw')
     team = add_basic_fields(raw_team)
     features = add_rolling_features(team)
@@ -105,7 +110,7 @@ def main():
     (run / 'source_metadata.json').write_text(json.dumps(source, indent=2, default=str), encoding='utf-8')
     frozen = subprocess.run([__import__('sys').executable, '-m', 'pip', 'freeze'], capture_output=True, text=True, check=True)
     (run / 'requirements.lock.txt').write_text(frozen.stdout, encoding='utf-8')
-    all_rows, game_rows, calibration = [], [], []
+    all_rows, game_rows, calibration, pending_manifests = [], [], [], []
     for season in SEASONS:
         season_rows = team[team.SEASON == season].copy()
         final_wins = season_rows.groupby('TEAM_ID').WIN.sum()
@@ -147,12 +152,18 @@ def main():
                 games = games[games.GAME_DATE < cutoff].copy()
                 columns = [c for c in games if c.startswith(('DIFF_', 'AVG_'))]
                 bundle = fit_bundle(model_name, games, columns, cutoff, args.seed)
+                values, probability = predicted_schedule(bundle, snapshot, profiles, schedule)
+                manifest = multi_cutoff_manifest(snapshot=snapshot, profiles=profiles,
+                                                  schedule=schedule, values=values,
+                                                  probabilities=probability, bundle=bundle,
+                                                  cutoff=cutoff)
+                manifest.update(season=season, model=model_name)
+                pending_manifests.append((season, cutoff, model_name, manifest))
                 for learned in (False, True):
                     # Team-only has no roster features; its learned-uncertainty
                     # counterpart is intentionally a matched no-effect control.
                     result = simulate_cutoff(bundle, snapshot, profiles, schedule.drop(columns='TARGET'), cutoff, current,
                                              args.n_sims, args.seed, 0., learned)
-                    probability = predicted_schedule(bundle, snapshot, profiles, schedule)
                     result['actual_wins'] = result.TEAM_ID.map(final_wins)
                     result['season'], result['cutoff'], result['model'], result['learned_uncertainty'] = season, str(cutoff.date()), model_name, learned
                     result.to_csv(run / f'standings_{season}_{cutoff:%Y%m%d}_{model_name}_{"learned" if learned else "outcome"}.csv', index=False)
@@ -173,13 +184,55 @@ def main():
                                    bottom_five_mae=float(result.nsmallest(5, 'actual_wins').eval('mean_wins - actual_wins').abs().mean()),
                                    trained_through=bundle['trained_through'], player_trained_through=player_bundle['trained_through'])
                     all_rows.append(metrics)
-                    game_rows.extend(dict(season=season, cutoff=str(cutoff.date()), model=model_name, learned_uncertainty=learned,
-                                          target=int(y), probability=float(p)) for y, p in zip(schedule.TARGET, probability))
+                    # Preserve game-level identity for later parity and calibration
+                    # audits.  GAME_ID must remain a string because NBA ids start
+                    # with zeroes when serialized to CSV.
+                    game_rows.extend(
+                        dict(
+                            game_id=game_id,
+                            game_date=str(pd.Timestamp(game_date).date()),
+                            home_team=int(home_team),
+                            away_team=int(away_team),
+                            season=season,
+                            cutoff=str(cutoff.date()),
+                            model=model_name,
+                            learned_uncertainty=learned,
+                            target=int(y),
+                            probability=float(p),
+                        )
+                        for game_id, game_date, home_team, away_team, y, p in zip(
+                            canonical_game_id(schedule.GAME_ID),
+                            schedule.GAME_DATE,
+                            schedule.HOME_TEAM,
+                            schedule.AWAY_TEAM,
+                            schedule.TARGET,
+                            probability,
+                        )
+                    )
                     calibration.extend(dict(season=season, cutoff=str(cutoff.date()), model=model_name, learned_uncertainty=learned, **row)
                                        for row in calibration_rows(schedule.TARGET, probability))
     metrics = pd.DataFrame(all_rows)
     metrics.to_csv(run / 'per_cutoff_metrics.csv', index=False)
-    pd.DataFrame(game_rows).to_csv(run / 'game_probabilities.csv', index=False)
+    game_probabilities = pd.DataFrame(game_rows)
+    probabilities_path = run / 'game_probabilities.parquet'
+    game_probabilities.to_parquet(probabilities_path, index=False)
+    persisted_probabilities = pd.read_parquet(probabilities_path)
+    for season, cutoff, model_name, manifest in pending_manifests:
+        persisted = persisted_probabilities[
+            (persisted_probabilities.season == season) &
+            (persisted_probabilities.cutoff == str(cutoff.date())) &
+            (persisted_probabilities.model == model_name) &
+            (persisted_probabilities.learned_uncertainty == False)
+        ].copy()
+        persisted['game_id'] = canonical_game_id(persisted.game_id)
+        in_memory_hash = manifest['probability_output_hash']
+        parquet_hash = probability_output_hash(persisted)
+        if parquet_hash != in_memory_hash:
+            raise AssertionError(f'Parquet probability round-trip mismatch for {season} {cutoff.date()} {model_name}')
+        manifest['probability_output_hash'] = parquet_hash
+        manifest['probability_storage'] = 'game_probabilities.parquet (IEEE-754 float64)'
+        (audit_dir / f'{season}_{cutoff:%Y%m%d}_{model_name}.json').write_text(
+            json.dumps(manifest, indent=2), encoding='utf-8')
     pd.DataFrame(calibration).to_csv(run / 'calibration_bins.csv', index=False)
     aggregate = metrics.groupby(['model', 'learned_uncertainty']).mean(numeric_only=True).reset_index()
     aggregate.to_csv(run / 'aggregate_metrics.csv', index=False)

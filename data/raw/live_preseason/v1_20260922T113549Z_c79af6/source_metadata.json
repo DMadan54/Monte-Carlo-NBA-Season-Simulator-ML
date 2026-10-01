@@ -1,0 +1,35 @@
+{
+  "scenario": "2026-27 preseason; not a mid-season forecast",
+  "as_of_date": "2026-09-21",
+  "retrieved_at_utc": "2026-09-22T11:35:49.701781+00:00",
+  "baseline_season": "2025-26",
+  "schedule_url": "https://cdn.nba.com/manage/2026/08/2026-27-NBA-Regular-Season-Schedule-By-Date.pdf",
+  "roster_source": "stats.nba.com CommonTeamRoster season=2026-27",
+  "team_log_source": "stats.nba.com LeagueGameLog team regular season 2025-26",
+  "player_log_source": "stats.nba.com LeagueGameLog player regular season 2025-26",
+  "assumptions": [
+    "Current roster endpoint is a retrieval-time snapshot, not a historical transaction ledger.",
+    "No injuries or availability limitations are supplied or assumed.",
+    "Returning players will use final-2025-26 minutes share; players new to a team receive a league-average bench-minutes weight."
+  ],
+  "files": {
+    "2026-27_schedule_by_date.pdf": "5e82e37ef1b19e226dee57be69958b95b5694516280d3034aa7c1d64292b3570",
+    "player_game_logs_2025-26.parquet": "d1a789d976d18c35e8ad9970f30e09c5e2a042a33993d475ed07f93217593ce3",
+    "roster_snapshot_2026-09-21.parquet": "a3bc9aa480da202b9f879dc2ffce11cb589208800e24e7a2de9706b07acdd447",
+    "schedule_2026-27.parquet": "822e2c87420b0bac4414a9a23731e7b8b7a15e3427964e2adec9a71f0b5b955d",
+    "team_game_logs_2025-26.parquet": "921687dc1583aa103fef6e7cf71d0eaed32e19e27518cc385e31bea40a475acc"
+  },
+  "row_counts": {
+    "team_logs": 2460,
+    "player_logs": 26651,
+    "roster_rows": 573,
+    "schedule_games": 1200
+  },
+  "schedule_completeness": {
+    "named_games": 1200,
+    "required_regular_season_games": 1230,
+    "missing_games": 30,
+    "simulation_eligible": false,
+    "reason": "Official August 13 schedule leaves 30 NBA Cup/TBD regular-season slots unassigned."
+  }
+}
