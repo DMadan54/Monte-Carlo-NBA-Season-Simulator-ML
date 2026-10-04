@@ -5,12 +5,14 @@ import json
 from pathlib import Path
 import joblib
 import pandas as pd
+import numpy as np
 
 from src.ingest.player_data import load_cached
 from src.features.build_team_features import add_basic_fields, add_rolling_features
 from src.features.player_profiles import build_candidates
 from src.models.player_forecast import forecast_profiles
 from src.models.cutoff_sim import simulate_cutoff, apply_trade
+from src.models.awards import save_awards
 
 
 def prepare_snapshot(team, players, cutoff, season):
@@ -71,14 +73,15 @@ def main():
     schedule = remaining[['GAME_ID', 'GAME_DATE', 'TEAM_ID', 'OPP_TEAM_ID', 'NEUTRAL_GAME']].rename(
         columns={'TEAM_ID': 'HOME_TEAM', 'OPP_TEAM_ID': 'AWAY_TEAM'})
     current = season[season.GAME_DATE < cutoff].groupby('TEAM_ID').WIN.sum().to_dict()
+    joint = {}
     result = simulate_cutoff(bundle, snapshot, profiles, schedule, cutoff, current, args.n_sims, args.seed,
-                             args.player_points_sd, args.learned_player_uncertainty)
+                             args.player_points_sd, args.learned_player_uncertainty, joint_draws=joint)
     if args.trade:
         original_result = result.copy()
         for player_id, destination in args.trade:
             profiles = apply_trade(profiles, player_id, destination)
         result = simulate_cutoff(bundle, snapshot, profiles, schedule, cutoff, current, args.n_sims, args.seed,
-                                 args.player_points_sd, args.learned_player_uncertainty)
+                                 args.player_points_sd, args.learned_player_uncertainty, joint_draws=joint)
         result['baseline_expected_wins'] = result.TEAM_ID.map(original_result.set_index('TEAM_ID').expected_wins)
         result['trade_expected_wins_delta'] = result.expected_wins - result.baseline_expected_wins
     names = team.drop_duplicates('TEAM_ID').set_index('TEAM_ID').TEAM_ABBREVIATION
@@ -91,7 +94,8 @@ def main():
     snapshot.to_parquet(output / 'team_snapshot.parquet', index=False)
     profiles.to_parquet(output / 'player_snapshot.parquet', index=False)
     schedule.to_csv(output / 'schedule.csv', index=False)
-    report = dict(cutoff=args.cutoff, model=name, seed=args.seed, n_sims=args.n_sims,
+    np.savez_compressed(output / 'joint_draws.npz', **joint)
+    report = dict(season=args.season, cutoff=args.cutoff, model=name, seed=args.seed, n_sims=args.n_sims,
         player_points_sd=args.player_points_sd, learned_player_uncertainty=args.learned_player_uncertainty,
         trades=args.trade, games_remaining=len(schedule),
         mean_absolute_error=float((result.mean_wins - result.actual_wins).abs().mean()),
@@ -102,6 +106,7 @@ def main():
                      'Additional nonzero player SD is a sensitivity assumption rather than calibrated uncertainty'],
         promotion='Experimental demonstration; one cutoff is not comprehensive preseason validation')
     (output / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
+    save_awards(output, output / 'awards.json')
     print(json.dumps(report, indent=2), flush=True)
     print(f'SCENARIO_DIR={output}', flush=True)
 

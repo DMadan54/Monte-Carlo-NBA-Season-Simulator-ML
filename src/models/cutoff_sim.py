@@ -37,7 +37,8 @@ def schedule_features(snapshot, schedule, rosters, include_fit=False):
 
 
 def simulate_cutoff(bundle, snapshot, profiles, schedule, cutoff, current_wins=None,
-                    n_sims=2000, seed=42, player_points_sd=0., learned_player_uncertainty=False):
+                    n_sims=2000, seed=42, player_points_sd=0., learned_player_uncertainty=False,
+                    joint_draws=None):
     """Return standings with optional learned, persistent player uncertainty.
 
     Each player's scoring perturbation is drawn once per trial and retained for
@@ -93,6 +94,9 @@ def simulate_cutoff(bundle, snapshot, profiles, schedule, cutoff, current_wins=N
                                       'boosted' in bundle['name'] or 'age' in bundle['name']) else 'PTS_36'
     base_profiles = profiles.copy()
     base_profiles['SCENARIO_POINTS'] = profiles[scoring_column]
+    # Optional export preserves the very same draws used by the game model.
+    # These are scoring-rate scenarios, NOT complete simulated player seasons.
+    exported_points = (np.empty((n_sims, len(profiles))) if joint_draws is not None else None)
     # A team-only classifier cannot respond to player residuals.  Retain its
     # requested configuration as an explicit matched control, but do not spend
     # Monte Carlo work on perturbations that cannot reach any model feature.
@@ -124,6 +128,8 @@ def simulate_cutoff(bundle, snapshot, profiles, schedule, cutoff, current_wins=N
             memberships[tid] = rows.index.to_numpy()
         draws = np.clip(profiles[scoring_column].to_numpy()[None, :] +
                         talent_rng.normal(0, learned_sd, size=(n_sims, len(profiles))), 0, 60)
+        if exported_points is not None:
+            exported_points[:] = draws
         roster = {}
         for tid, indices in memberships.items():
             values = draws[:, indices]
@@ -157,6 +163,8 @@ def simulate_cutoff(bundle, snapshot, profiles, schedule, cutoff, current_wins=N
                 p = probabilities(base_profiles)
             else:
                 p = fixed
+            if exported_points is not None:
+                exported_points[trial] = base_profiles.SCENARIO_POINTS.to_numpy()
             outcomes = game_rng.random(len(schedule)) < p
             np.add.at(win_matrix[trial], home, outcomes.astype(int))
             np.add.at(win_matrix[trial], away, (~outcomes).astype(int))
@@ -164,6 +172,16 @@ def simulate_cutoff(bundle, snapshot, profiles, schedule, cutoff, current_wins=N
             np.add.at(expected[trial], away, 1 - p)
     if not np.all(win_matrix.sum(axis=1) == sum(known.values()) + len(schedule)):
         raise AssertionError('League wins not conserved')
+    if joint_draws is not None:
+        minutes = np.zeros(len(profiles))
+        for _, rows in profiles.groupby('TEAM_ID'):
+            minutes[rows.index] = project_minutes(rows[minutes_column].to_numpy())
+        joint_draws.update(schema_version=1, cutoff=cutoff.isoformat(), seed=seed,
+                          team_ids=np.asarray(ids, dtype=str), team_wins=win_matrix.copy(),
+                          player_ids=np.asarray(profiles.PLAYER_ID, dtype=str),
+                          player_team_ids=np.asarray(profiles.TEAM_ID, dtype=str),
+                          player_pts36=exported_points, player_minutes=minutes,
+                          semantics='Frozen rotation and scoring rates; no games-played, starts, or availability draws')
     result = pd.DataFrame(dict(TEAM_ID=ids, mean_wins=win_matrix.mean(axis=0), expected_wins=expected.mean(axis=0),
         std_wins=win_matrix.std(axis=0, ddof=1), p05=np.quantile(win_matrix, .05, axis=0),
         p10=np.quantile(win_matrix, .10, axis=0), p25=np.quantile(win_matrix, .25, axis=0),
