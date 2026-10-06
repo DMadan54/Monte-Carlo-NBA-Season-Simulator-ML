@@ -8,8 +8,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--history', type=Path, help='Verified build_award_history output to include development evaluation')
     args = parser.parse_args()
-    result = save_awards(args.source, args.output)
+    result = save_awards(args.source, args.output, args.history)
     print(f"{result['forecast_version']}: {result['status']}; saved {args.output}")
 
 

@@ -1,0 +1,3 @@
+# Optional source-PDF ingestion dependency; model/dashboard dependencies remain
+# in requirements-player.lock.txt. Tested parser version in bundled runtime.
+pdfplumber==0.11.9

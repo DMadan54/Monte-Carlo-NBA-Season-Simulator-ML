@@ -1,0 +1,15 @@
+{
+  "purpose": "Real historical runner integration smoke test; not award forecasting validation",
+  "scenario": "data\\processed\\player_runs\\awards_integration_check\\scenario_20261006T131551315870Z",
+  "trials": 20,
+  "teams": 30,
+  "players": 478,
+  "joint_consistency": "passed",
+  "awards_status": "incomplete",
+  "files": {
+    "report.json": "cc16b02fb82fc5d5e6bffd8b72891a0a6ea8c34b783b5a1eb997f0ecd9e0d0dd",
+    "standings.csv": "f07bedd136ba74fc0988ba8a246e35118d99be8e0a69b31f7f2e13a9668283ef",
+    "joint_draws.npz": "a5c0451e8ad10bc19726b03322ab372b6f210af6b49e423f7497ce01be78e583",
+    "awards.json": "7298d5924fa5d392114403b6341563221182fe1ba032e94569c32d9a6ff8a23c"
+  }
+}

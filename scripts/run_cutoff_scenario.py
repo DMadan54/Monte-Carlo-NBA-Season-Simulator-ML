@@ -46,6 +46,9 @@ def prepare_snapshot(team, players, cutoff, season):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--run-dir', type=Path, required=True)
+    parser.add_argument('--raw-dir', type=Path, default=Path('data/raw'))
+    parser.add_argument('--output-root', type=Path, help='Optional location for a new scenario; existing runs are never overwritten')
+    parser.add_argument('--awards-history', type=Path, help='Verified historical awards dataset for the saved awards report')
     parser.add_argument('--cutoff', default='2025-01-01')
     parser.add_argument('--season', default='2024-25')
     parser.add_argument('--n-sims', type=int, default=2000)
@@ -63,7 +66,7 @@ def main():
     cutoff = pd.Timestamp(args.cutoff)
     if pd.Timestamp(player_bundle['trained_through']) >= cutoff:
         raise ValueError('Player model was trained after the scenario cutoff')
-    team, players, _ = load_cached('data/raw')
+    team, players, _ = load_cached(args.raw_dir)
     snapshot, profiles = prepare_snapshot(team, players, cutoff, args.season)
     profiles = forecast_profiles(profiles, player_bundle)
     profiles['BASE_MIN'] = profiles.MEAN_MIN * __import__('numpy').exp(-.12 * profiles.TEAM_GAMES_ABSENT)
@@ -88,8 +91,8 @@ def main():
     result['team'] = result.TEAM_ID.map(names)
     actual = season.groupby('TEAM_ID').WIN.sum()
     result['actual_wins'] = result.TEAM_ID.map(actual)
-    output = args.run_dir / ('scenario_' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ'))
-    output.mkdir(exist_ok=False)
+    output = (args.output_root or args.run_dir) / ('scenario_' + datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%S%fZ'))
+    output.mkdir(parents=True, exist_ok=False)
     result.to_csv(output / 'standings.csv', index=False)
     snapshot.to_parquet(output / 'team_snapshot.parquet', index=False)
     profiles.to_parquet(output / 'player_snapshot.parquet', index=False)
@@ -106,7 +109,7 @@ def main():
                      'Additional nonzero player SD is a sensitivity assumption rather than calibrated uncertainty'],
         promotion='Experimental demonstration; one cutoff is not comprehensive preseason validation')
     (output / 'report.json').write_text(json.dumps(report, indent=2), encoding='utf-8')
-    save_awards(output, output / 'awards.json')
+    save_awards(output, output / 'awards.json', args.awards_history)
     print(json.dumps(report, indent=2), flush=True)
     print(f'SCENARIO_DIR={output}', flush=True)
 

@@ -12,3 +12,6 @@ venv/
 /data/processed/player_runs/
 /data/processed/multi_cutoff_runs/
 /data/raw/player_metadata/
+
+# Reproducible official source downloads; compact source manifests are tracked.
+/data/raw/awards/**/*.pdf
