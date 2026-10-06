@@ -12,7 +12,7 @@ A Python portfolio project developing independently trained player and game mode
 - Fixed-cutoff season scenarios with learned persistent player-residual uncertainty, plus explicit trade scenarios.
 - Tests for leakage, dated context, roster changes, feasible minutes, and simulation conservation.
 
-Coaching input validation and an estimator exist, but dated coaching assignments are missing, so no real coaching estimates have been trained. Possession-level RAPM, detailed lineup compatibility, calibrated roster/injury uncertainty, awards prediction, and the dashboard remain future work.
+Coaching input validation and an estimator exist, but dated coaching assignments are missing, so no real coaching estimates have been trained. Possession-level RAPM, detailed lineup compatibility and calibrated roster/injury uncertainty remain future work. The read-only season/awards dashboard and awards data/evaluation workflow are implemented; award predictions remain incomplete rather than inventing probabilities.
 
 ## Research and results
 
@@ -55,6 +55,16 @@ Rolling historical evaluation uses each game's past information as it becomes av
 The baseline January 2025 scenario's nominal 90% outcome-only intervals covered only 60% of teams. Learned persistent player-residual uncertainty raised coverage to 86.7% in the same single-cutoff experiment. Repeat-cutoff evaluation, better roster data, and injury inputs are still required before making confident season-level claims.
 
 ## Scenario dashboard
+
+The website now includes Season, Awards and Teams / players views bound to one
+forecast version. Its default 2026-27 release visibly reports the blocked season
+simulation and each award's missing inputs. Official historical voting data and
+chronological MVP/MIP baseline checks are included, with no calibrated probability
+claims. The historical demo and original source artifacts are preserved.
+
+See [awards reproduction](docs/AWARDS_REPRODUCTION.md) and
+[award model cards](docs/AWARDS_MODEL_CARDS.md) for commands, verified evidence,
+eligibility contracts and concrete blockers.
 
 With the local versioned artifact available, run the read-only dashboard:
 
