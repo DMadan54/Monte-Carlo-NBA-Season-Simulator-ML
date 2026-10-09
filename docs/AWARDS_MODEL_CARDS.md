@@ -170,3 +170,9 @@ screenshots and the integration audit are beside the release awards artifact.
 The website is local, not deployed. Remaining blockers: the upstream complete
 season scenario; complete player-season/role/availability draws; verified eligible
 fields; adequate award-specific predictors; and untouched full-pipeline evaluation.
+# MVP feature evidence update
+
+The separate [MVP input card](MVP_INPUTS.md) documents production, efficiency,
+availability and team-success inputs, three sourced historical MVP profiles,
+and 30 chronological single-feature preseason checks. These are experimental
+inputs and descriptive associations, not a fitted award model or probabilities.

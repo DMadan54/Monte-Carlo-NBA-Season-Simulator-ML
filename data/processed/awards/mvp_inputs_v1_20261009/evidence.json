@@ -1,0 +1,791 @@
+{
+  "status": "experimental_inputs",
+  "probability_release_approved": false,
+  "feature_groups": {
+    "Production": [
+      "ppg",
+      "rebounds_per_game",
+      "assists_per_game"
+    ],
+    "Efficiency": [
+      "true_shooting",
+      "relative_true_shooting"
+    ],
+    "Availability and role": [
+      "games",
+      "minutes_per_game",
+      "minutes",
+      "games_share"
+    ],
+    "Team success": [
+      "team_win_pct"
+    ]
+  },
+  "definitions": {
+    "ppg": "Points / appearances.",
+    "rebounds_per_game": "Rebounds / appearances.",
+    "assists_per_game": "Assists / appearances.",
+    "true_shooting": "PTS / (2 \u00d7 (FGA + 0.44 \u00d7 FTA)); undefined with no shooting attempts.",
+    "relative_true_shooting": "Player true shooting minus league true shooting, in proportion units.",
+    "games": "Observed appearances, including appearances rounded to zero minutes.",
+    "minutes_per_game": "Total minutes / appearances.",
+    "minutes": "Total minutes; combines role and availability.",
+    "games_share": "Appearances / final team games. Descriptive proxy, not award eligibility.",
+    "team_win_pct": "Final team wins / games. Traded players use their final team, not a stint-weighted team."
+  },
+  "winners": [
+    {
+      "season": "2022-23",
+      "player_id": "203954",
+      "player_name": "Joel Embiid",
+      "ppg": 33.07575757575758,
+      "rebounds_per_game": 10.151515151515152,
+      "assists_per_game": 4.151515151515151,
+      "true_shooting": 0.6546747918715962,
+      "relative_true_shooting": 0.07341700199078527,
+      "games": 66.0,
+      "minutes_per_game": 34.666666666666664,
+      "minutes": 2288.0,
+      "games_share": 0.8048780487804879,
+      "team_win_pct": 0.6585365853658537
+    },
+    {
+      "season": "2023-24",
+      "player_id": "203999",
+      "player_name": "Nikola Joki\u0107",
+      "ppg": 26.39240506329114,
+      "rebounds_per_game": 12.354430379746836,
+      "assists_per_game": 8.962025316455696,
+      "true_shooting": 0.6500511311201457,
+      "relative_true_shooting": 0.07006143617622895,
+      "games": 79.0,
+      "minutes_per_game": 34.64556962025316,
+      "minutes": 2737.0,
+      "games_share": 0.9634146341463414,
+      "team_win_pct": 0.6951219512195121
+    },
+    {
+      "season": "2024-25",
+      "player_id": "1628983",
+      "player_name": "Shai Gilgeous-Alexander",
+      "ppg": 32.68421052631579,
+      "rebounds_per_game": 4.9868421052631575,
+      "assists_per_game": 6.394736842105263,
+      "true_shooting": 0.6368055128284009,
+      "relative_true_shooting": 0.060615974970231634,
+      "games": 76.0,
+      "minutes_per_game": 34.1578947368421,
+      "minutes": 2596.0,
+      "games_share": 0.926829268292683,
+      "team_win_pct": 0.8292682926829268
+    }
+  ],
+  "recipient_associations": [
+    {
+      "season": "2022-23",
+      "feature": "ppg",
+      "observed_recipients": 13,
+      "recipient_spearman": 0.4979371973320603
+    },
+    {
+      "season": "2022-23",
+      "feature": "rebounds_per_game",
+      "observed_recipients": 13,
+      "recipient_spearman": 0.6657502859356828
+    },
+    {
+      "season": "2022-23",
+      "feature": "assists_per_game",
+      "observed_recipients": 13,
+      "recipient_spearman": -0.34663031416485957
+    },
+    {
+      "season": "2022-23",
+      "feature": "true_shooting",
+      "observed_recipients": 13,
+      "recipient_spearman": 0.5254475397260967
+    },
+    {
+      "season": "2022-23",
+      "feature": "relative_true_shooting",
+      "observed_recipients": 13,
+      "recipient_spearman": 0.5254475397260967
+    },
+    {
+      "season": "2022-23",
+      "feature": "games",
+      "observed_recipients": 13,
+      "recipient_spearman": 0.2022191699069473
+    },
+    {
+      "season": "2022-23",
+      "feature": "minutes_per_game",
+      "observed_recipients": 13,
+      "recipient_spearman": 0.24759308154632828
+    },
+    {
+      "season": "2022-23",
+      "feature": "minutes",
+      "observed_recipients": 13,
+      "recipient_spearman": 0.11279240381554963
+    },
+    {
+      "season": "2022-23",
+      "feature": "games_share",
+      "observed_recipients": 13,
+      "recipient_spearman": 0.2022191699069473
+    },
+    {
+      "season": "2022-23",
+      "feature": "team_win_pct",
+      "observed_recipients": 13,
+      "recipient_spearman": 0.5400573092180472
+    },
+    {
+      "season": "2023-24",
+      "feature": "ppg",
+      "observed_recipients": 9,
+      "recipient_spearman": 0.4666666666666667
+    },
+    {
+      "season": "2023-24",
+      "feature": "rebounds_per_game",
+      "observed_recipients": 9,
+      "recipient_spearman": 0.1333333333333334
+    },
+    {
+      "season": "2023-24",
+      "feature": "assists_per_game",
+      "observed_recipients": 9,
+      "recipient_spearman": 0.5166666666666667
+    },
+    {
+      "season": "2023-24",
+      "feature": "true_shooting",
+      "observed_recipients": 9,
+      "recipient_spearman": 0.4
+    },
+    {
+      "season": "2023-24",
+      "feature": "relative_true_shooting",
+      "observed_recipients": 9,
+      "recipient_spearman": 0.4
+    },
+    {
+      "season": "2023-24",
+      "feature": "games",
+      "observed_recipients": 9,
+      "recipient_spearman": -0.2605134001129656
+    },
+    {
+      "season": "2023-24",
+      "feature": "minutes_per_game",
+      "observed_recipients": 9,
+      "recipient_spearman": -0.5
+    },
+    {
+      "season": "2023-24",
+      "feature": "minutes",
+      "observed_recipients": 9,
+      "recipient_spearman": -0.7
+    },
+    {
+      "season": "2023-24",
+      "feature": "games_share",
+      "observed_recipients": 9,
+      "recipient_spearman": -0.2605134001129656
+    },
+    {
+      "season": "2023-24",
+      "feature": "team_win_pct",
+      "observed_recipients": 9,
+      "recipient_spearman": 0.5063696835418333
+    },
+    {
+      "season": "2024-25",
+      "feature": "ppg",
+      "observed_recipients": 12,
+      "recipient_spearman": 0.7548794396587318
+    },
+    {
+      "season": "2024-25",
+      "feature": "rebounds_per_game",
+      "observed_recipients": 12,
+      "recipient_spearman": 0.36685729777807524
+    },
+    {
+      "season": "2024-25",
+      "feature": "assists_per_game",
+      "observed_recipients": 12,
+      "recipient_spearman": 0.13757148666677818
+    },
+    {
+      "season": "2024-25",
+      "feature": "true_shooting",
+      "observed_recipients": 12,
+      "recipient_spearman": 0.3245276095729127
+    },
+    {
+      "season": "2024-25",
+      "feature": "relative_true_shooting",
+      "observed_recipients": 12,
+      "recipient_spearman": 0.3245276095729127
+    },
+    {
+      "season": "2024-25",
+      "feature": "games",
+      "observed_recipients": 12,
+      "recipient_spearman": 0.007207780529653306
+    },
+    {
+      "season": "2024-25",
+      "feature": "minutes_per_game",
+      "observed_recipients": 12,
+      "recipient_spearman": 0.1516813827351657
+    },
+    {
+      "season": "2024-25",
+      "feature": "minutes",
+      "observed_recipients": 12,
+      "recipient_spearman": 0.19401107094032827
+    },
+    {
+      "season": "2024-25",
+      "feature": "games_share",
+      "observed_recipients": 12,
+      "recipient_spearman": 0.007207780529653306
+    },
+    {
+      "season": "2024-25",
+      "feature": "team_win_pct",
+      "observed_recipients": 12,
+      "recipient_spearman": 0.15329792625539448
+    }
+  ],
+  "preseason_checks": [
+    {
+      "season": "2022-23",
+      "cutoff": "2022-10-01",
+      "feature_max_date": "2022-04-10",
+      "feature": "ppg",
+      "candidates": 605,
+      "missing_input_exclusions": 0,
+      "target_players_without_inputs": 106,
+      "winner_present": true,
+      "winner_rank": 1.0,
+      "reciprocal_rank": 1.0,
+      "top5": true
+    },
+    {
+      "season": "2022-23",
+      "cutoff": "2022-10-01",
+      "feature_max_date": "2022-04-10",
+      "feature": "rebounds_per_game",
+      "candidates": 605,
+      "missing_input_exclusions": 0,
+      "target_players_without_inputs": 106,
+      "winner_present": true,
+      "winner_rank": 6.0,
+      "reciprocal_rank": 0.16666666666666666,
+      "top5": false
+    },
+    {
+      "season": "2022-23",
+      "cutoff": "2022-10-01",
+      "feature_max_date": "2022-04-10",
+      "feature": "assists_per_game",
+      "candidates": 605,
+      "missing_input_exclusions": 0,
+      "target_players_without_inputs": 106,
+      "winner_present": true,
+      "winner_rank": 68.0,
+      "reciprocal_rank": 0.014705882352941176,
+      "top5": false
+    },
+    {
+      "season": "2022-23",
+      "cutoff": "2022-10-01",
+      "feature_max_date": "2022-04-10",
+      "feature": "true_shooting",
+      "candidates": 597,
+      "missing_input_exclusions": 8,
+      "target_players_without_inputs": 106,
+      "winner_present": true,
+      "winner_rank": 90.0,
+      "reciprocal_rank": 0.011111111111111112,
+      "top5": false
+    },
+    {
+      "season": "2022-23",
+      "cutoff": "2022-10-01",
+      "feature_max_date": "2022-04-10",
+      "feature": "relative_true_shooting",
+      "candidates": 597,
+      "missing_input_exclusions": 8,
+      "target_players_without_inputs": 106,
+      "winner_present": true,
+      "winner_rank": 90.0,
+      "reciprocal_rank": 0.011111111111111112,
+      "top5": false
+    },
+    {
+      "season": "2022-23",
+      "cutoff": "2022-10-01",
+      "feature_max_date": "2022-04-10",
+      "feature": "games",
+      "candidates": 605,
+      "missing_input_exclusions": 0,
+      "target_players_without_inputs": 106,
+      "winner_present": true,
+      "winner_rank": 126.0,
+      "reciprocal_rank": 0.007936507936507936,
+      "top5": false
+    },
+    {
+      "season": "2022-23",
+      "cutoff": "2022-10-01",
+      "feature_max_date": "2022-04-10",
+      "feature": "minutes_per_game",
+      "candidates": 605,
+      "missing_input_exclusions": 0,
+      "target_players_without_inputs": 106,
+      "winner_present": true,
+      "winner_rank": 45.0,
+      "reciprocal_rank": 0.022222222222222223,
+      "top5": false
+    },
+    {
+      "season": "2022-23",
+      "cutoff": "2022-10-01",
+      "feature_max_date": "2022-04-10",
+      "feature": "minutes",
+      "candidates": 605,
+      "missing_input_exclusions": 0,
+      "target_players_without_inputs": 106,
+      "winner_present": true,
+      "winner_rank": 46.0,
+      "reciprocal_rank": 0.021739130434782608,
+      "top5": false
+    },
+    {
+      "season": "2022-23",
+      "cutoff": "2022-10-01",
+      "feature_max_date": "2022-04-10",
+      "feature": "games_share",
+      "candidates": 605,
+      "missing_input_exclusions": 0,
+      "target_players_without_inputs": 106,
+      "winner_present": true,
+      "winner_rank": 126.0,
+      "reciprocal_rank": 0.007936507936507936,
+      "top5": false
+    },
+    {
+      "season": "2022-23",
+      "cutoff": "2022-10-01",
+      "feature_max_date": "2022-04-10",
+      "feature": "team_win_pct",
+      "candidates": 605,
+      "missing_input_exclusions": 0,
+      "target_players_without_inputs": 106,
+      "winner_present": true,
+      "winner_rank": 132.5,
+      "reciprocal_rank": 0.007547169811320755,
+      "top5": false
+    },
+    {
+      "season": "2023-24",
+      "cutoff": "2023-10-01",
+      "feature_max_date": "2023-04-09",
+      "feature": "ppg",
+      "candidates": 539,
+      "missing_input_exclusions": 0,
+      "target_players_without_inputs": 122,
+      "winner_present": true,
+      "winner_rank": 25.0,
+      "reciprocal_rank": 0.04,
+      "top5": false
+    },
+    {
+      "season": "2023-24",
+      "cutoff": "2023-10-01",
+      "feature_max_date": "2023-04-09",
+      "feature": "rebounds_per_game",
+      "candidates": 539,
+      "missing_input_exclusions": 0,
+      "target_players_without_inputs": 122,
+      "winner_present": true,
+      "winner_rank": 3.0,
+      "reciprocal_rank": 0.3333333333333333,
+      "top5": true
+    },
+    {
+      "season": "2023-24",
+      "cutoff": "2023-10-01",
+      "feature_max_date": "2023-04-09",
+      "feature": "assists_per_game",
+      "candidates": 539,
+      "missing_input_exclusions": 0,
+      "target_players_without_inputs": 122,
+      "winner_present": true,
+      "winner_rank": 4.0,
+      "reciprocal_rank": 0.25,
+      "top5": true
+    },
+    {
+      "season": "2023-24",
+      "cutoff": "2023-10-01",
+      "feature_max_date": "2023-04-09",
+      "feature": "true_shooting",
+      "candidates": 537,
+      "missing_input_exclusions": 2,
+      "target_players_without_inputs": 123,
+      "winner_present": true,
+      "winner_rank": 21.0,
+      "reciprocal_rank": 0.047619047619047616,
+      "top5": false
+    },
+    {
+      "season": "2023-24",
+      "cutoff": "2023-10-01",
+      "feature_max_date": "2023-04-09",
+      "feature": "relative_true_shooting",
+      "candidates": 537,
+      "missing_input_exclusions": 2,
+      "target_players_without_inputs": 123,
+      "winner_present": true,
+      "winner_rank": 21.0,
+      "reciprocal_rank": 0.047619047619047616,
+      "top5": false
+    },
+    {
+      "season": "2023-24",
+      "cutoff": "2023-10-01",
+      "feature_max_date": "2023-04-09",
+      "feature": "games",
+      "candidates": 539,
+      "missing_input_exclusions": 0,
+      "target_players_without_inputs": 122,
+      "winner_present": true,
+      "winner_rank": 127.5,
+      "reciprocal_rank": 0.00784313725490196,
+      "top5": false
+    },
+    {
+      "season": "2023-24",
+      "cutoff": "2023-10-01",
+      "feature_max_date": "2023-04-09",
+      "feature": "minutes_per_game",
+      "candidates": 539,
+      "missing_input_exclusions": 0,
+      "target_players_without_inputs": 122,
+      "winner_present": true,
+      "winner_rank": 48.0,
+      "reciprocal_rank": 0.020833333333333332,
+      "top5": false
+    },
+    {
+      "season": "2023-24",
+      "cutoff": "2023-10-01",
+      "feature_max_date": "2023-04-09",
+      "feature": "minutes",
+      "candidates": 539,
+      "missing_input_exclusions": 0,
+      "target_players_without_inputs": 122,
+      "winner_present": true,
+      "winner_rank": 48.5,
+      "reciprocal_rank": 0.020618556701030927,
+      "top5": false
+    },
+    {
+      "season": "2023-24",
+      "cutoff": "2023-10-01",
+      "feature_max_date": "2023-04-09",
+      "feature": "games_share",
+      "candidates": 539,
+      "missing_input_exclusions": 0,
+      "target_players_without_inputs": 122,
+      "winner_present": true,
+      "winner_rank": 127.5,
+      "reciprocal_rank": 0.00784313725490196,
+      "top5": false
+    },
+    {
+      "season": "2023-24",
+      "cutoff": "2023-10-01",
+      "feature_max_date": "2023-04-09",
+      "feature": "team_win_pct",
+      "candidates": 539,
+      "missing_input_exclusions": 0,
+      "target_players_without_inputs": 122,
+      "winner_present": true,
+      "winner_rank": 62.5,
+      "reciprocal_rank": 0.016,
+      "top5": false
+    },
+    {
+      "season": "2024-25",
+      "cutoff": "2024-10-01",
+      "feature_max_date": "2024-04-14",
+      "feature": "ppg",
+      "candidates": 572,
+      "missing_input_exclusions": 0,
+      "target_players_without_inputs": 122,
+      "winner_present": true,
+      "winner_rank": 4.0,
+      "reciprocal_rank": 0.25,
+      "top5": true
+    },
+    {
+      "season": "2024-25",
+      "cutoff": "2024-10-01",
+      "feature_max_date": "2024-04-14",
+      "feature": "rebounds_per_game",
+      "candidates": 572,
+      "missing_input_exclusions": 0,
+      "target_players_without_inputs": 122,
+      "winner_present": true,
+      "winner_rank": 81.0,
+      "reciprocal_rank": 0.012345679012345678,
+      "top5": false
+    },
+    {
+      "season": "2024-25",
+      "cutoff": "2024-10-01",
+      "feature_max_date": "2024-04-14",
+      "feature": "assists_per_game",
+      "candidates": 572,
+      "missing_input_exclusions": 0,
+      "target_players_without_inputs": 122,
+      "winner_present": true,
+      "winner_rank": 23.0,
+      "reciprocal_rank": 0.043478260869565216,
+      "top5": false
+    },
+    {
+      "season": "2024-25",
+      "cutoff": "2024-10-01",
+      "feature_max_date": "2024-04-14",
+      "feature": "true_shooting",
+      "candidates": 568,
+      "missing_input_exclusions": 4,
+      "target_players_without_inputs": 123,
+      "winner_present": true,
+      "winner_rank": 70.0,
+      "reciprocal_rank": 0.014285714285714285,
+      "top5": false
+    },
+    {
+      "season": "2024-25",
+      "cutoff": "2024-10-01",
+      "feature_max_date": "2024-04-14",
+      "feature": "relative_true_shooting",
+      "candidates": 568,
+      "missing_input_exclusions": 4,
+      "target_players_without_inputs": 123,
+      "winner_present": true,
+      "winner_rank": 70.0,
+      "reciprocal_rank": 0.014285714285714285,
+      "top5": false
+    },
+    {
+      "season": "2024-25",
+      "cutoff": "2024-10-01",
+      "feature_max_date": "2024-04-14",
+      "feature": "games",
+      "candidates": 572,
+      "missing_input_exclusions": 0,
+      "target_players_without_inputs": 122,
+      "winner_present": true,
+      "winner_rank": 81.0,
+      "reciprocal_rank": 0.012345679012345678,
+      "top5": false
+    },
+    {
+      "season": "2024-25",
+      "cutoff": "2024-10-01",
+      "feature_max_date": "2024-04-14",
+      "feature": "minutes_per_game",
+      "candidates": 572,
+      "missing_input_exclusions": 0,
+      "target_players_without_inputs": 122,
+      "winner_present": true,
+      "winner_rank": 35.0,
+      "reciprocal_rank": 0.02857142857142857,
+      "top5": false
+    },
+    {
+      "season": "2024-25",
+      "cutoff": "2024-10-01",
+      "feature_max_date": "2024-04-14",
+      "feature": "minutes",
+      "candidates": 572,
+      "missing_input_exclusions": 0,
+      "target_players_without_inputs": 122,
+      "winner_present": true,
+      "winner_rank": 28.0,
+      "reciprocal_rank": 0.03571428571428571,
+      "top5": false
+    },
+    {
+      "season": "2024-25",
+      "cutoff": "2024-10-01",
+      "feature_max_date": "2024-04-14",
+      "feature": "games_share",
+      "candidates": 572,
+      "missing_input_exclusions": 0,
+      "target_players_without_inputs": 122,
+      "winner_present": true,
+      "winner_rank": 81.0,
+      "reciprocal_rank": 0.012345679012345678,
+      "top5": false
+    },
+    {
+      "season": "2024-25",
+      "cutoff": "2024-10-01",
+      "feature_max_date": "2024-04-14",
+      "feature": "team_win_pct",
+      "candidates": 572,
+      "missing_input_exclusions": 0,
+      "target_players_without_inputs": 122,
+      "winner_present": true,
+      "winner_rank": 35.0,
+      "reciprocal_rank": 0.02857142857142857,
+      "top5": false
+    }
+  ],
+  "limitations": [
+    "Three MVP outcomes; every examined season is development evidence, not a held-out final test.",
+    "Associations use actual end-of-season statistics and observed vote recipients only; selection bias and correlated inputs prevent causal conclusions.",
+    "Preseason checks separately carry forward prior-season metrics. They retain exits, exclude entrants and do not incorporate roster moves or improvement.",
+    "Single-feature rankings are baselines, not fitted feature weights or calibrated probabilities.",
+    "Team context uses the final historical team; traded-player stint weighting remains missing.",
+    "Games and rounded minutes do not certify qualifying games or eligibility exceptions.",
+    "The shared simulation still needs joint rebounds, assists, shooting attempts/makes, games and minutes before these inputs can drive a 2026\u201327 award model.",
+    "More historical voting seasons and full preseason pipeline evaluation are required to learn and validate MVP weights."
+  ],
+  "created_at_utc": "2026-10-09T14:42:18.784440+00:00",
+  "history_version": "history_v4_20261006",
+  "history_manifest_sha256": "380213aea6d23638e65665d2a32bd76d01cfe34ea1500bf2e1aa92dadaa47ec9",
+  "source_seasons": [
+    "2021-22",
+    "2022-23",
+    "2023-24",
+    "2024-25"
+  ],
+  "player_seasons": 2285,
+  "excluded_incomplete_source_seasons": [
+    "2020-21"
+  ],
+  "sources": [
+    {
+      "season": "2022-23",
+      "award": "mvp",
+      "kind": "Voting-Results",
+      "voters": 100,
+      "index_url": "https://pr.nba.com/voting-results-2022-23-nba-regular-season-awards/",
+      "url": "https://ak-static.cms.nba.com/wp-content/uploads/sites/46/2023/05/2022-23-Kia-NBA-Most-Valuable-Player-Voting-Results.pdf",
+      "label_available_at": "2023-05-11",
+      "file": "2022-23_mvp.pdf",
+      "retrieved_at_utc": "2026-10-06T12:53:15.808734+00:00",
+      "sha256": "de0a2a3d7f1328123fd0af9f42e79ce050ad5214e836f27966774f6e891d75ec"
+    },
+    {
+      "season": "2023-24",
+      "award": "mvp",
+      "kind": "Voting-Results",
+      "voters": 99,
+      "index_url": "https://pr.nba.com/voting-results-2023-24-nba-regular-season-awards/",
+      "url": "https://ak-static.cms.nba.com/wp-content/uploads/sites/46/2024/05/2023-24-Kia-NBA-MVP-Voting-Results.pdf",
+      "label_available_at": "2024-05-23",
+      "file": "2023-24_mvp.pdf",
+      "retrieved_at_utc": "2026-10-06T12:53:20.683457+00:00",
+      "sha256": "6ce09226ba6ddf796e2f93d53d397c552794054ed85d96ead73d59201d5f3b7d"
+    },
+    {
+      "season": "2024-25",
+      "award": "mvp",
+      "kind": "Voter-Selections",
+      "voters": 100,
+      "index_url": "https://pr.nba.com/voting-results-2024-25-nba-regular-season-awards/",
+      "url": "https://ak-static.cms.nba.com/wp-content/uploads/sites/46/2025/05/2024-25-Kia-NBA-Most-Valuable-Player-Voter-Selections.pdf",
+      "label_available_at": "2025-05-24",
+      "file": "2024-25_mvp.pdf",
+      "retrieved_at_utc": "2026-10-06T12:53:24.471926+00:00",
+      "sha256": "2f4742697bdde57d97907e7ea0814d236d0bad28c39bf5a31045fbc9a02aba5c"
+    }
+  ],
+  "log_provenance": [
+    {
+      "file": "player_game_logs_2020-21.parquet",
+      "sha256": "7bf442d0107acfb82c3b1101fb9457060d504179a184df25990a8f65e2afdf23",
+      "retrieved_at_utc": null,
+      "source": "NBA LeagueGameLog local cache",
+      "retrieval_note": "Original cache retrieval timestamp is unknown"
+    },
+    {
+      "file": "team_game_logs_2020-21.parquet",
+      "sha256": "0ef1d5474c26e623611a9b385f638274caed0317a7d1f27cd4fda4b514d826b8",
+      "retrieved_at_utc": null,
+      "source": "NBA LeagueGameLog local cache",
+      "retrieval_note": "Original cache retrieval timestamp is unknown"
+    },
+    {
+      "file": "player_game_logs_2021-22.parquet",
+      "sha256": "923736b51b64a2a6f9cf32188b21070c73817dfa25e1f3529f774ebed90531fc",
+      "retrieved_at_utc": null,
+      "source": "NBA LeagueGameLog local cache",
+      "retrieval_note": "Original cache retrieval timestamp is unknown"
+    },
+    {
+      "file": "team_game_logs_2021-22.parquet",
+      "sha256": "1e31e1102ce0458236c60bfb191e7063c1bff5b85a37b05e418bdb9cffe5cd0f",
+      "retrieved_at_utc": null,
+      "source": "NBA LeagueGameLog local cache",
+      "retrieval_note": "Original cache retrieval timestamp is unknown"
+    },
+    {
+      "file": "player_game_logs_2022-23.parquet",
+      "sha256": "4f6e86942ee46019e8721f9d221b21924dcb175ad421b9436e41c6962682e1a9",
+      "retrieved_at_utc": null,
+      "source": "NBA LeagueGameLog local cache",
+      "retrieval_note": "Original cache retrieval timestamp is unknown"
+    },
+    {
+      "file": "team_game_logs_2022-23.parquet",
+      "sha256": "db71ca5a9a845c8ba4c2daa4b602d33208ca4a94236b6d158812031aa7bc74b4",
+      "retrieved_at_utc": null,
+      "source": "NBA LeagueGameLog local cache",
+      "retrieval_note": "Original cache retrieval timestamp is unknown"
+    },
+    {
+      "file": "player_game_logs_2023-24.parquet",
+      "sha256": "47639e098f76924c651eba70395100f27334d83a459358be295abc583c388a5b",
+      "retrieved_at_utc": null,
+      "source": "NBA LeagueGameLog local cache",
+      "retrieval_note": "Original cache retrieval timestamp is unknown"
+    },
+    {
+      "file": "team_game_logs_2023-24.parquet",
+      "sha256": "31c15dd1ff23a388e768dd024a2f1d95debde31092b3d5d3e0c551291037c9c2",
+      "retrieved_at_utc": null,
+      "source": "NBA LeagueGameLog local cache",
+      "retrieval_note": "Original cache retrieval timestamp is unknown"
+    },
+    {
+      "file": "player_game_logs_2024-25.parquet",
+      "sha256": "8fc0f7bd833018c919cf26c0793b70f70b22f7518c6e5dd9a1255111bffa4d6d",
+      "retrieved_at_utc": null,
+      "source": "NBA LeagueGameLog local cache",
+      "retrieval_note": "Original cache retrieval timestamp is unknown"
+    },
+    {
+      "file": "team_game_logs_2024-25.parquet",
+      "sha256": "4b07695f2e1a266b5ea843ab77401464f71fcfc01abe6b251404653a1c4eaa07",
+      "retrieved_at_utc": null,
+      "source": "NBA LeagueGameLog local cache",
+      "retrieval_note": "Original cache retrieval timestamp is unknown"
+    }
+  ],
+  "inputs_sha256": "0cc5d48ae51d371e8f0aee2af69e108a340d87e8ebee1268862de1478757d0c3"
+}

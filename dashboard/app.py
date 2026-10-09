@@ -9,11 +9,41 @@ import streamlit as st
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
-from src.models.awards import load_awards
+from src.models.awards import load_awards, digest
 
 DEFAULT = ROOT / 'data/processed/player_runs/v1_20260910T215749Z_35f88a/scenario_20260910T220652Z'
 UPCOMING = ROOT / 'data/raw/live_preseason/v1_20260922T113549Z_c79af6'
 AWARDS_RELEASE = ROOT / 'results/awards/v3_20261006/awards.json'
+MVP_EVIDENCE = ROOT / 'data/processed/awards/mvp_inputs_v1_20261009/evidence.json'
+
+
+def show_mvp_inputs():
+    st.subheader('MVP: historical inputs and evidence')
+    st.caption('Separate historical research artifact · Experimental inputs · Not predictions for the selected forecast')
+    if not MVP_EVIDENCE.exists():
+        st.info('MVP feature evidence unavailable. Run scripts.build_mvp_inputs to generate it.')
+        return
+    report = json.loads(MVP_EVIDENCE.read_text(encoding='utf-8'))
+    if digest(MVP_EVIDENCE.parent / 'inputs.parquet') != report['inputs_sha256']:
+        raise ValueError('MVP input evidence fingerprint mismatch')
+    st.caption(f"Evidence version: {MVP_EVIDENCE.parent.name} · Generated: {report['created_at_utc']}")
+    for group, features in report['feature_groups'].items():
+        st.write(f"**{group}:** " + '; '.join(report['definitions'][feature] for feature in features))
+    st.write('**Past winners and their actual season metrics**')
+    st.dataframe(pd.DataFrame(report['winners']).drop(columns='player_id'), hide_index=True, use_container_width=True)
+    st.write('**Would last season’s metrics have ranked the next MVP highly?**')
+    checks = pd.DataFrame(report['preseason_checks'])
+    st.dataframe(checks[['season', 'feature', 'winner_rank', 'top5', 'candidates', 'missing_input_exclusions']], hide_index=True, use_container_width=True)
+    with st.expander('Associations with recorded MVP voting'):
+        st.write('Spearman rank correlations among recorded vote recipients, separately by season. Positive means higher metrics tended to accompany more votes in this selected group. This does not measure causal influence or establish a model weight.')
+        st.dataframe(pd.DataFrame(report['recipient_associations']), hide_index=True, use_container_width=True)
+    for limitation in report['limitations']:
+        st.write(f'- {limitation}')
+    with st.expander('MVP input provenance'):
+        st.write(f"{report['player_seasons']} player-seasons; history version {report['history_version']}. Original game-log retrieval timestamps are unknown; file hashes are preserved.")
+        for source in report['sources']:
+            st.markdown(f"[{source['season']} official MVP voting]({source['url']}) — retrieved {source['retrieved_at_utc']}")
+    st.download_button('Download MVP evidence', MVP_EVIDENCE.read_bytes(), file_name='mvp_evidence.json', mime='application/json')
 
 
 def load_artifact(path_text):
@@ -66,6 +96,7 @@ def show_awards(path, award_path):
             st.write(f"{provenance['vote_recipient_rows']} vote-recipient records; {provenance['candidate_rows']} player-season-award rows.")
             for entry in provenance['sources']:
                 st.markdown(f"[{entry['season']} {entry['award'].upper()}]({entry['url']}) — retrieved {entry['retrieved_at_utc']}")
+    show_mvp_inputs()
     st.download_button('Download saved awards artifact', award_path.read_bytes(), file_name='awards.json', mime='application/json')
 
 
