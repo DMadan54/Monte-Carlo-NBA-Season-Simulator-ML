@@ -1,5 +1,14 @@
 # Execution log
 
+## 2026-10-11 — MVP cutoff experiment
+
+- Built a separate March 1 fixed-cutoff MVP forecasting run from cached regular-season logs and the pinned historical vote labels. No previous models or runs were overwritten.
+- All 117 vote recipients across 2015–16 through 2024–25 were present by March 1; matched IDs and future vote outcomes were used only as labels. Player/team features use game dates strictly before each cutoff. Most recently observed team supplies traded-player team context.
+- Evaluated winner predictions on eight forward-only seasons ending 2018–2025. The learned logistic model put the winner in its top three in 7/8 seasons (baseline 5/8) but picked the exact winner in 2/8 (baseline 3/8). Mean winner log loss was 1.413 versus 1.973; multiclass Brier was 0.719 versus 0.705. This is mixed evidence, so the model remains experimental.
+- Added a known-at-cutoff normal 65-game eligibility-path flag for 2023–24 onward. Injury/grievance exceptions and exact unrounded minutes are unavailable, so candidates are not hard-excluded.
+- Latest run: `data/processed/mvp_runs/v2_cutoff_20261011T170512Z_cb62f5bd/`. It contains candidate features, predictions, per-season metrics, top picks, coverage, eligibility audit, standardized weights, and input hashes.
+- Focused MVP tests passed, including future-game mutation and chronological target isolation. Legacy tests that overwrite saved models were not run.
+
 ## 2026-09-10
 
 - Researched published methods, rewrote AGENTS.md, and wrote seven execution prompts.
