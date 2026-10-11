@@ -80,3 +80,17 @@ The learned model ranked the eventual winner in its top three in **7/8** seasons
 From 2023–24 onward, a cutoff-known flag records whether a player can still reach the normal 65-game path under the [NBA collective bargaining summary](https://cms.nba.com/wp-content/uploads/sites/4/2024/11/2024-25-CBA-101.pdf): games normally require at least 20 minutes, with up to two games of 15–19 minutes counting. It assumes 82 scheduled games and never uses future actual games. At the March 1 cutoffs, 399 candidates in 2023–24 and 398 in 2024–25 lacked a normal path; no eventual vote recipient did. Injury and grievance exceptions are not in the cache, so the flag does not hard-exclude anyone. Rounded minutes can misclassify threshold games. The first year with the rule offers no prior rule-era training examples, and its learned coefficient remains zero.
 
 This is still a retrospective fixed-date test. March 1 represents a different fraction of the schedule in unusual seasons such as 2020–21. The model has no archived injury news, transactions before first appearance, live roster feed, or exceptional eligibility decisions. It predicts winner probabilities from observed player performances; it does not project individual future minutes or season-end box scores. Further cutoff dates and more seasons are needed before treating the probabilities as deployable.
+
+### January–March cutoff validation
+
+`data/processed/mvp_runs/v3_multi_cutoff_20261011T174353Z_cb62f5bd/` repeats the forward-only evaluation at January 1, February 1, and March 1, retraining and calibrating within earlier seasons separately at each date. Every eventual vote recipient and winner is present in the candidate set at all three dates. The same eight seasons (ending 2018–2025) are held out at each date; the 24 predictions represent **eight independent award outcomes**, not 24 independent seasons.
+
+| Cutoff | Model winner | Baseline winner | Model top-three | Baseline top-three | Model log loss | Baseline log loss | Model Brier | Baseline Brier |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| January 1 | 3/8 | 2/8 | 7/8 | 4/8 | 2.092 | 3.427 | 0.857 | 0.895 |
+| February 1 | 3/8 | 3/8 | 7/8 | 5/8 | 1.400 | 1.976 | 0.676 | 0.728 |
+| March 1 | 2/8 | 3/8 | 7/8 | 5/8 | 1.413 | 1.973 | 0.719 | 0.705 |
+
+The model's paired winner log loss improved by 0.692 from January to February (season-block bootstrap 95% interval for February minus January: -0.987 to -0.401). February to March changed by +0.013 (interval -0.204 to +0.180), so there is no evidence of further improvement at the later date. Model-minus-baseline log-loss intervals include zero at all three cutoffs; superiority is not established. February is the strongest of these three dates on Brier, while March is worse than the baseline on that metric. This supports using the model as an experimental candidate ranker, not a calibrated winner forecast.
+
+The delayed 2020–21 start makes calendar comparisons uneven: January 1 followed only about five games per team that year, versus roughly 32–37 in other seasons. A separate seven-season sensitivity table excluding 2020–21 is saved; the primary results retain it. The January model still has lower mean log loss than the baseline in that sensitivity (2.118 versus 2.602), but higher Brier (0.863 versus 0.795). More historical seasons and independent cutoff dates are needed before revising the model or claiming a stable advantage.

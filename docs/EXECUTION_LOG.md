@@ -1,5 +1,14 @@
 # Execution log
 
+## 2026-10-11 — multi-cutoff MVP validation
+
+- Generalized the MVP snapshot to January 1, February 1, and March 1 without using games dated on or after each cutoff. Each date trains/tunes the model and baseline only on prior seasons.
+- All eventual vote recipients and winners were present at all three dates in every covered season. Recorded candidate counts and median team games to expose unusual calendars; January 2020–21 had only five games per team.
+- On eight held-out seasons, model exact-winner hits were 3/8, 3/8, and 2/8 for January, February, and March; baseline hits were 2/8, 3/8, and 3/8. Model top-three coverage was 7/8 at every date. Model mean log loss was 2.092, 1.400, and 1.413; paired February-minus-January improvement was -0.692 with a season-block 95% bootstrap interval [-0.987, -0.401]. February-to-March change was inconclusive.
+- Model-minus-baseline log-loss intervals include zero at all dates. Brier score at March was worse for the model. Kept the model experimental; no previous artifact was replaced.
+- Latest versioned run: `data/processed/mvp_runs/v3_multi_cutoff_20261011T174353Z_cb62f5bd/`. It stores each snapshot, predictions, per-season rankings, source hashes, monthly summary, paired bootstrap results, and a seven-season sensitivity excluding delayed-start 2020–21 from summaries only.
+- Focused MVP tests passed; future game mutations cannot change earlier cutoff features. Legacy tests that overwrite saved models were not run.
+
 ## 2026-10-11 — MVP cutoff experiment
 
 - Built a separate March 1 fixed-cutoff MVP forecasting run from cached regular-season logs and the pinned historical vote labels. No previous models or runs were overwritten.

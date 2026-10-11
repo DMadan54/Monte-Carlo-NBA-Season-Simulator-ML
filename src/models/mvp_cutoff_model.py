@@ -1,4 +1,4 @@
-"""Fixed-March-1 MVP winner forecasts using only earlier game logs."""
+"""Fixed-date MVP winner forecasts using only earlier game logs."""
 import numpy as np
 import pandas as pd
 from scipy.stats import spearmanr
@@ -16,12 +16,14 @@ ALPHAS = (0.03, 0.3, 3.0)
 BASELINE_BETAS = (0.5, 1.0, 2.0, 4.0, 8.0)
 
 
-def cutoff_for_season(season):
-    """March 1 of the season end year; observations on that date are excluded."""
-    return pd.Timestamp(year=int(season[:4]) + 1, month=3, day=1)
+def cutoff_for_season(season, month=3):
+    """First day of January, February, or March in the season end year."""
+    if month not in (1, 2, 3):
+        raise ValueError("Supported MVP cutoffs are January, February, and March 1")
+    return pd.Timestamp(year=int(season[:4]) + 1, month=month, day=1)
 
 
-def build_cutoff_candidates(players, teams, mapped):
+def build_cutoff_candidates(players, teams, mapped, month=3):
     p = players.copy()
     t = teams.copy()
     p["GAME_DATE"] = pd.to_datetime(p.GAME_DATE).dt.normalize()
@@ -29,8 +31,8 @@ def build_cutoff_candidates(players, teams, mapped):
     p["PLAYER_ID"] = p.PLAYER_ID.astype(str)
     p["TEAM_ID"] = p.TEAM_ID.astype(str)
     t["TEAM_ID"] = t.TEAM_ID.astype(str)
-    p["cutoff"] = p.SEASON.map(cutoff_for_season)
-    t["cutoff"] = t.SEASON.map(cutoff_for_season)
+    p["cutoff"] = p.SEASON.map(lambda season: cutoff_for_season(season, month))
+    t["cutoff"] = t.SEASON.map(lambda season: cutoff_for_season(season, month))
     p = p[p.GAME_DATE < p.cutoff].copy()
     t = t[t.GAME_DATE < t.cutoff].copy()
     if p.duplicated(["SEASON", "GAME_ID", "PLAYER_ID"]).any():
@@ -66,7 +68,7 @@ def build_cutoff_candidates(players, teams, mapped):
     c["normal_path_open"] = ((c.season_end_year < 2024) |
         (c.qualifying_games_so_far + c.remaining_team_games_assumed >= 65)).astype(int)
     c = c.rename(columns={"SEASON": "season", "PLAYER_ID": "player_id", "TEAM_ID": "current_team_id"})
-    c["cutoff"] = c.season.map(cutoff_for_season)
+    c["cutoff"] = c.season.map(lambda season: cutoff_for_season(season, month))
     c = c.merge(mapped[["season", "player_id", "vote_share", "is_winner"]],
                 on=["season", "player_id"], how="left", validate="one_to_one")
     c["vote_share"] = c.vote_share.fillna(0.0)

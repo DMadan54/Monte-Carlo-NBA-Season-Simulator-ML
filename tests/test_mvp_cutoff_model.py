@@ -23,16 +23,18 @@ class MvpCutoffTests(unittest.TestCase):
                                               ("B", "b", "2025-02-20"),
                                               ("B", "c", "2025-03-01")]]
         mapped = pd.DataFrame([dict(season="2024-25", player_id="1", vote_share=.5, is_winner=True)])
-        original = build_cutoff_candidates(pd.DataFrame(player_rows), pd.DataFrame(team_rows), mapped)
-        changed = pd.DataFrame(player_rows)
-        changed.loc[2, "PTS"] = 1000
-        later = build_cutoff_candidates(changed, pd.DataFrame(team_rows), mapped)
-        self.assertEqual(original.current_team_id.iloc[0], "B")
-        self.assertEqual(original.games.iloc[0], 2)
-        self.assertEqual(original.pts_per_game.iloc[0], 22)
-        self.assertEqual(original.pts_per_game.iloc[0], later.pts_per_game.iloc[0])
-        self.assertEqual(str(original.cutoff.iloc[0].date()), "2025-03-01")
-        self.assertEqual(original.normal_path_open.iloc[0], 1)
+        for month, expected_games, expected_team, expected_points in [
+                (1, 1, "A", 20), (2, 1, "A", 20), (3, 2, "B", 22)]:
+            original = build_cutoff_candidates(pd.DataFrame(player_rows), pd.DataFrame(team_rows), mapped, month=month)
+            changed = pd.DataFrame(player_rows)
+            changed.loc[2, "PTS"] = 1000
+            later = build_cutoff_candidates(changed, pd.DataFrame(team_rows), mapped, month=month)
+            self.assertEqual(original.current_team_id.iloc[0], expected_team)
+            self.assertEqual(original.games.iloc[0], expected_games)
+            self.assertEqual(original.pts_per_game.iloc[0], expected_points)
+            self.assertEqual(original.pts_per_game.iloc[0], later.pts_per_game.iloc[0])
+            self.assertEqual(str(original.cutoff.iloc[0].date()), f"2025-{month:02d}-01")
+            self.assertEqual(original.normal_path_open.iloc[0], 1)
 
     def test_later_winner_label_does_not_change_prior_forecast(self):
         rows = []
