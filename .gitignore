@@ -11,4 +11,5 @@ venv/
 # Versioned local ML artifacts and source-response caches (summaries live in docs).
 /data/processed/player_runs/
 /data/processed/multi_cutoff_runs/
+/data/processed/mvp_runs/
 /data/raw/player_metadata/

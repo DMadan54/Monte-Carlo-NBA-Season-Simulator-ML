@@ -1,0 +1,9 @@
+test_season_end_year,train_through_season_end_year,train_seasons,test_vote_recipients
+2018,2017,2,13
+2019,2018,3,12
+2020,2019,4,12
+2021,2020,5,13
+2022,2021,6,12
+2023,2022,7,13
+2024,2023,8,9
+2025,2024,9,12

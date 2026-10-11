@@ -1,0 +1,13 @@
+{
+  "source_url": "https://raw.githubusercontent.com/DavidYoo912/nba_mvp/135b21a8d757b516822df57782d41b564862cd46/data/master_table.csv",
+  "source_commit": "135b21a8d757b516822df57782d41b564862cd46",
+  "retrieved_at_utc": "2026-10-11T15:01:50.668903+00:00",
+  "source_sha256": "325de65f78497a97c0540ebf938f2550e7195294ee531d94683083a2a0aeb541",
+  "source_type": "secondary transcription of Basketball-Reference voting tables",
+  "first_season_end_year": 1981,
+  "last_season_end_year": 2025,
+  "vote_recipients": 715,
+  "evaluation_folds": 8,
+  "scope": "MVP vote recipients only; nonrecipients require a separate player-season universe",
+  "feature_policy": "No source statistics imported; construct features separately at each prediction cutoff"
+}
