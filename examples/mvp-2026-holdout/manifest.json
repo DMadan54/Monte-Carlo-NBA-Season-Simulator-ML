@@ -1,0 +1,20 @@
+{
+  "artifact_kind": "historical_fixed_cutoff_mvp_holdout",
+  "season": "2025-26",
+  "source_run": "data/processed/mvp_runs/v4_2026_holdout_20261012T105053Z_78977174",
+  "source_sha256": {
+    "predictions.parquet": "12b89927c31802e3d41947189f09f3b3a9e9beb6ba744545adaaf5de710a3b12",
+    "season_metrics.csv": "478abe27a18f604162b04da579f2a95da43eea439ebb24a26246981f75db036a",
+    "manifest.json": "0db15e391bdd2549b017f8b09b86a39a1e65cb1f165e8e7f89d93cbb9fe8d02b"
+  },
+  "official_vote_source": "https://pr.nba.com/voting-results-2025-26-nba-regular-season-awards/",
+  "training_rule": "Each test season trains only on earlier seasons; 2026 fold trained through 2025",
+  "mode": "retrospective fixed-date award forecast, not preseason or live",
+  "limitations": [
+    "Only one newly added independent award outcome",
+    "Votes and logs are archived; live injury and eligibility exception data remain absent",
+    "Calendar-date cutoffs are a different fraction of season across unusual years",
+    "The learned model missed the 2025-26 winner at all three cutoffs",
+    "Three cutoff dates in 2025-26 are one independent award outcome"
+  ]
+}

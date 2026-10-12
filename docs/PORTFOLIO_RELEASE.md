@@ -4,7 +4,7 @@
 
 This is a completed **experimental portfolio project** demonstrating independently trained player and game models, chronological evaluation, Monte Carlo regular-season standings, and conditional roster-change scenarios. It is not a validated live/preseason prediction service. The player-aware model has not established a reliable standings advantage over the team-only baseline. Coaching, injury/availability, and dated transaction inputs are incomplete; no causal trade or player impact estimate is claimed. The 2026–27 full-season forecast remains blocked by 30 unassigned schedule games in the saved official schedule snapshot.
 
-The bundled dashboard example is a **2025-01-01 historical fixed-cutoff retrospective scenario**. Its schedule is the final played calendar supplied after the season, not an archived schedule known at the cutoff. Its report and standings are byte-for-byte copies of the source run, checked by `scripts.verify_portfolio_evidence`. It lets a reviewer inspect the output without downloading the training caches.
+The dashboard includes a **2025-01-01 historical fixed-cutoff standings scenario** and a **2025–26 MVP awards holdout**. The standings schedule is the final played calendar supplied after the season, not an archived schedule known at the cutoff. The standings report and rows are byte-for-byte copies of the source run; all bundled MVP rows and source hashes are checked by `scripts.verify_portfolio_evidence`. A reviewer can inspect both sections without downloading the training caches.
 
 ## Numbers independently checked from saved artifacts
 
@@ -35,6 +35,6 @@ For an interview, explain that the 0.601090 versus 0.602622 game log-loss differ
 ## Reviewer walkthrough
 
 1. Install `requirements-player.lock.txt` in Python 3.12.
-2. Run `.venv/Scripts/python.exe -m streamlit run dashboard/app.py`. The bundled historical example loads by default; the sidebar accepts another versioned scenario directory.
+2. Run `.venv/Scripts/python.exe -m streamlit run dashboard/app.py`. The bundled standings and MVP examples load by default; the sidebar accepts another versioned artifact directory for either tab.
 3. Read [MODEL_CARD.md](MODEL_CARD.md) for methods and limitations, and [EXECUTION_LOG.md](EXECUTION_LOG.md) for chronological experiment history.
 4. If the local ignored runs are present, run `.venv/Scripts/python.exe -m scripts.verify_portfolio_evidence` and the focused `tests/test_portfolio_release.py` tests.

@@ -1,5 +1,12 @@
 # Execution log
 
+## 2026-10-12 — integrated awards portfolio page
+
+- Added a read-only MVP awards tab alongside standings and project evidence. It displays the 2025–26 January/February/March candidate rankings, actual winner, learned and baseline probabilities, and per-season chronological metrics through 2026.
+- Bundled 1,566 candidate-cutoff rows and 54 season-method metric rows from the frozen 2026 holdout. The bundle records source hashes and the official vote source. The release verifier checks bundled rows against the source run; dashboard validation rejects missing columns, duplicate candidates, incomplete folds, probability sums, and inconsistent winner loss/rank.
+- The page labels the learned model's three misses and the baseline's three hits as one independent award outcome. It makes no live or preseason award-accuracy claim.
+- Portfolio evidence verification, 15 focused tests, source compilation, and an app smoke check passed. The app check showed all three tabs, eight headline metrics across standings and awards, three tables, and the cutoff selector without application exceptions. Legacy tests that overwrite saved models were not run.
+
 ## 2026-10-12 — portfolio release audit
 
 - Added a bundled, read-only 2025-01-01 historical scenario example and validated its 30-team schema, win conservation, MAE, and interval coverage. The dashboard now opens this example from a fresh clone.

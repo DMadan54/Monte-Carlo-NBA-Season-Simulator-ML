@@ -12,7 +12,7 @@ A Python portfolio project developing independently trained player and game mode
 - Fixed-cutoff season scenarios with learned persistent player-residual uncertainty, plus explicit trade scenarios.
 - Tests for leakage, dated context, roster changes, feasible minutes, and simulation conservation.
 
-Coaching input validation and an estimator exist, but dated coaching assignments are missing, so no real coaching estimates have been trained. Experimental MVP winner models have been evaluated at January, February, and March cutoffs, including a new 2025–26 holdout; the simple baseline beat the learned model on that holdout, so neither is deployed. A read-only dashboard loads the bundled historical scenario. Possession-level RAPM, detailed lineup compatibility, and calibrated roster/injury uncertainty remain future work.
+Coaching input validation and an estimator exist, but dated coaching assignments are missing, so no real coaching estimates have been trained. Experimental MVP winner models have been evaluated at January, February, and March cutoffs, including a new 2025–26 holdout; the simple baseline beat the learned model on that holdout, so neither is deployed. The read-only dashboard includes standings, MVP awards, and project-evidence sections with bundled historical artifacts. Possession-level RAPM, detailed lineup compatibility, and calibrated roster/injury uncertainty remain future work.
 
 ## Research and results
 
@@ -56,13 +56,13 @@ The baseline January 2025 scenario's nominal 90% outcome-only intervals covered 
 
 ## Scenario dashboard
 
-Run the read-only dashboard; its small historical example is included in the repository:
+Run the read-only dashboard; its historical standings and MVP examples are included in the repository:
 
 ```powershell
 .venv/Scripts/python.exe -m streamlit run dashboard/app.py
 ```
 
-It loads the bundled `examples/2025-01-01-scenario/` by default, or a selected local versioned scenario directory. It displays simulated standings, win intervals, actual wins, assumptions, and limitations. It never retrains or changes model artifacts. To verify the numerical portfolio claims against the local full experiment artifacts, run `.venv/Scripts/python.exe -m scripts.verify_portfolio_evidence`.
+It loads `examples/2025-01-01-scenario/` and `examples/mvp-2026-holdout/` by default. The standings tab displays simulated wins and intervals; the awards tab shows each cutoff's candidate rankings, baseline comparison, and chronological test seasons. The project-evidence tab explains measured gains and limitations. The app never retrains or changes model artifacts. To verify the numerical portfolio claims and bundled rows against the local full experiment artifacts, run `.venv/Scripts/python.exe -m scripts.verify_portfolio_evidence`.
 
 ## Structure
 

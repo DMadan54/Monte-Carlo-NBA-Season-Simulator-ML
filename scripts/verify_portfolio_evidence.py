@@ -8,6 +8,8 @@ import pandas as pd
 from sklearn.metrics import log_loss
 
 from dashboard.artifact import load_artifact
+from dashboard.awards import load_awards
+from scripts.build_awards_example import PREDICTION_COLUMNS, METRIC_COLUMNS
 
 ROOT = Path(__file__).resolve().parents[1]
 GAME_RUN = ROOT / "data/processed/player_runs/v1_20260910T200443Z_6a86c4"
@@ -15,6 +17,7 @@ SCENARIO_RUN = ROOT / "data/processed/player_runs/v1_20260910T215749Z_35f88a/sce
 MULTI_RUN = ROOT / "data/processed/multi_cutoff_runs/v1_20260911T110925Z_9a9b27"
 MVP_RUN = ROOT / "data/processed/mvp_runs/v4_2026_holdout_20261012T105053Z_78977174"
 EXAMPLE = ROOT / "examples/2025-01-01-scenario"
+AWARDS_EXAMPLE = ROOT / "examples/mvp-2026-holdout"
 
 
 def verify():
@@ -67,6 +70,23 @@ def verify():
 
     mvp = pd.read_csv(MVP_RUN / "new_holdout_2026.csv")
     picks = pd.read_csv(MVP_RUN / "top_picks_2026.csv")
+    awards_manifest, bundled_predictions, bundled_metrics = load_awards(AWARDS_EXAMPLE)
+    for name, expected_hash in awards_manifest["source_sha256"].items():
+        if hashlib.sha256((MVP_RUN / name).read_bytes()).hexdigest() != expected_hash:
+            raise ValueError(f"Bundled award source hash mismatch: {name}")
+    original_predictions = pd.read_parquet(MVP_RUN / "predictions.parquet")
+    original_predictions = original_predictions[original_predictions.season_end_year.eq(2026)]
+    original_predictions = original_predictions[PREDICTION_COLUMNS].sort_values(
+        ["cutoff_month", "model_rank"]).reset_index(drop=True)
+    original_predictions["cutoff"] = pd.to_datetime(original_predictions["cutoff"]).dt.strftime("%Y-%m-%d")
+    bundled_predictions = bundled_predictions[PREDICTION_COLUMNS].reset_index(drop=True)
+    pd.testing.assert_frame_equal(original_predictions, bundled_predictions, check_dtype=False,
+                                  check_exact=False, rtol=1e-12)
+    original_metrics = pd.read_csv(MVP_RUN / "season_metrics.csv")
+    original_metrics = original_metrics[METRIC_COLUMNS].sort_values(
+        ["test_year", "cutoff_month", "method"]).reset_index(drop=True)
+    pd.testing.assert_frame_equal(original_metrics, bundled_metrics[METRIC_COLUMNS].reset_index(drop=True),
+                                  check_dtype=False, check_exact=False, rtol=1e-12)
     if len(mvp) != 6 or set(mvp.cutoff_month) != {1, 2, 3} or len(picks) != 6:
         raise ValueError("MVP holdout is incomplete")
     if mvp[mvp.method == "model"].winner_correct.any() or not mvp[mvp.method == "baseline"].winner_correct.all():
