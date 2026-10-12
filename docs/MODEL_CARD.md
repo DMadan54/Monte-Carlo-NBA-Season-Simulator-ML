@@ -94,3 +94,15 @@ This is still a retrospective fixed-date test. March 1 represents a different fr
 The model's paired winner log loss improved by 0.692 from January to February (season-block bootstrap 95% interval for February minus January: -0.987 to -0.401). February to March changed by +0.013 (interval -0.204 to +0.180), so there is no evidence of further improvement at the later date. Model-minus-baseline log-loss intervals include zero at all three cutoffs; superiority is not established. February is the strongest of these three dates on Brier, while March is worse than the baseline on that metric. This supports using the model as an experimental candidate ranker, not a calibrated winner forecast.
 
 The delayed 2020–21 start makes calendar comparisons uneven: January 1 followed only about five games per team that year, versus roughly 32–37 in other seasons. A separate seven-season sensitivity table excluding 2020–21 is saved; the primary results retain it. The January model still has lower mean log loss than the baseline in that sensitivity (2.118 versus 2.602), but higher Brier (0.863 versus 0.795). More historical seasons and independent cutoff dates are needed before revising the model or claiming a stable advantage.
+
+### New 2025–26 held-out season
+
+The separate `data/processed/mvp_runs/v4_2026_holdout_20261012T105053Z_78977174/` run adds a genuinely new season after the earlier eight-season analysis. It uses the [NBA's official 2025–26 MVP vote table](https://pr.nba.com/voting-results-2025-26-nba-regular-season-awards/) and cached logs retrieved 2026-09-22. The log audit found all 1,230 regular-season games and 82 games per team. All eight vote recipients matched player IDs and appeared at each cutoff. The training, preprocessing, hyperparameter selection, and probability scaling for 2026 use only earlier seasons; 2026 votes are labels for evaluation only. Source hashes, coverage, predictions, and model settings are in the run directory.
+
+| Cutoff | Learned top pick | Actual winner rank | Learned winner log loss | Baseline winner log loss |
+| --- | --- | ---: | ---: | ---: |
+| January 1 | Nikola Jokić | 2 | 1.868 | 0.098 |
+| February 1 | Nikola Jokić | 3 | 1.336 | 0.146 |
+| March 1 | Nikola Jokić | 2 | 1.295 | 0.856 |
+
+Shai Gilgeous-Alexander won; the baseline selected him at all three cutoffs. These three dates are one independent award outcome, and the learned model lost to the baseline on exact winner and winner log loss at each date. This does not support promoting or retuning the learned model using the exposed 2026 result. Historical eligibility exceptions, injuries, and transaction context are incomplete; fixed calendar dates also represent different schedule fractions across seasons. Neither this retrospective fixed-cutoff evaluation nor the season-end study validates a preseason forecast.

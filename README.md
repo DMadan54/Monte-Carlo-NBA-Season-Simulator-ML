@@ -12,7 +12,7 @@ A Python portfolio project developing independently trained player and game mode
 - Fixed-cutoff season scenarios with learned persistent player-residual uncertainty, plus explicit trade scenarios.
 - Tests for leakage, dated context, roster changes, feasible minutes, and simulation conservation.
 
-Coaching input validation and an estimator exist, but dated coaching assignments are missing, so no real coaching estimates have been trained. Possession-level RAPM, detailed lineup compatibility, calibrated roster/injury uncertainty, awards prediction, and the dashboard remain future work.
+Coaching input validation and an estimator exist, but dated coaching assignments are missing, so no real coaching estimates have been trained. Experimental MVP winner models have been evaluated at January, February, and March cutoffs, including a new 2025–26 holdout; the simple baseline beat the learned model on that holdout, so neither is deployed. Possession-level RAPM, detailed lineup compatibility, calibrated roster/injury uncertainty, and the dashboard remain future work.
 
 ## Research and results
 

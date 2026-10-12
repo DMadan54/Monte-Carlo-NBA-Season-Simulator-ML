@@ -13,3 +13,5 @@ venv/
 /data/processed/multi_cutoff_runs/
 /data/processed/mvp_runs/
 /data/raw/player_metadata/
+# Official NBA source image is a local verification cache; derived vote facts are versioned.
+/data/raw/mvp_voting/official_2026_mvp_voting.jpg

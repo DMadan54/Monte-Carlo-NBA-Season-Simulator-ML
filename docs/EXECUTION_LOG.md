@@ -1,5 +1,13 @@
 # Execution log
 
+## 2026-10-12 — independent 2025–26 MVP holdout
+
+- Audited cached 2025–26 logs: 1,230 regular-season games, 2,460 team-game rows, 26,651 player-game rows, 582 players, and 82 games per team. Player and team dates/points reconcile. The cache was retrieved 2026-09-22; the separate 2026–27 schedule failure does not affect these logs.
+- Transcribed the NBA's official 2025–26 MVP vote table into a new versioned source. All eight vote recipients match player IDs and appear at January 1, February 1, and March 1 cutoffs. Each voting rank has 100 ballots; the table totals 2,600 points.
+- Extended chronological evaluation through season ending 2026 without changing the fitted model or tuning on its result. The learned model selected Nikola Jokić at all three cutoffs and ranked actual winner Shai Gilgeous-Alexander second, third, and second. The baseline selected Shai at all three. Model winner log loss was 1.868, 1.336, and 1.295 versus baseline 0.098, 0.146, and 0.856. This new holdout argues against promotion of the learned model.
+- New versioned run: `data/processed/mvp_runs/v4_2026_holdout_20261012T105053Z_78977174/`. It records candidates, probabilities, season metrics, weights, top picks, coverage, source hashes, and limitations. Existing runs and default models were preserved.
+- Eight focused MVP tests passed, including vote reconciliation and a 2026 target-mutation leakage check. Legacy tests that overwrite saved models were not run.
+
 ## 2026-10-11 — multi-cutoff MVP validation
 
 - Generalized the MVP snapshot to January 1, February 1, and March 1 without using games dated on or after each cutoff. Each date trains/tunes the model and baseline only on prior seasons.

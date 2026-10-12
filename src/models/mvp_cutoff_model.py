@@ -112,7 +112,7 @@ def fit_baseline_beta(train):
 
 def evaluate(candidates, first_test=2018):
     predictions, metrics, weights = [], [], []
-    for year in range(first_test, 2026):
+    for year in range(first_test, int(candidates.season_end_year.max()) + 1):
         train = candidates[(candidates.season_end_year >= 2016) & (candidates.season_end_year < year)].copy()
         test = candidates[candidates.season_end_year == year].copy()
         if test.empty or train.season_end_year.nunique() < 2 or test.is_winner.sum() != 1:
