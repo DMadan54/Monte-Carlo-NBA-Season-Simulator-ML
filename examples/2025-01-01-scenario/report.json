@@ -1,0 +1,20 @@
+{
+  "cutoff": "2025-01-01",
+  "model": "hybrid_development_ml",
+  "seed": 42,
+  "n_sims": 2000,
+  "player_points_sd": 0.0,
+  "learned_player_uncertainty": true,
+  "trades": [],
+  "games_remaining": 746,
+  "mean_absolute_error": 4.850933333333335,
+  "interval_coverage": 0.8666666666666667,
+  "assumptions": [
+    "Frozen past-only profiles",
+    "Last-observed roster, no future transactions or injuries",
+    "Final historical schedule supplied as scenario; not an as-published schedule archive",
+    "Learned uncertainty uses only prior out-of-fold scoring residuals when enabled",
+    "Additional nonzero player SD is a sensitivity assumption rather than calibrated uncertainty"
+  ],
+  "promotion": "Experimental demonstration; one cutoff is not comprehensive preseason validation"
+}

@@ -12,11 +12,11 @@ A Python portfolio project developing independently trained player and game mode
 - Fixed-cutoff season scenarios with learned persistent player-residual uncertainty, plus explicit trade scenarios.
 - Tests for leakage, dated context, roster changes, feasible minutes, and simulation conservation.
 
-Coaching input validation and an estimator exist, but dated coaching assignments are missing, so no real coaching estimates have been trained. Experimental MVP winner models have been evaluated at January, February, and March cutoffs, including a new 2025–26 holdout; the simple baseline beat the learned model on that holdout, so neither is deployed. Possession-level RAPM, detailed lineup compatibility, calibrated roster/injury uncertainty, and the dashboard remain future work.
+Coaching input validation and an estimator exist, but dated coaching assignments are missing, so no real coaching estimates have been trained. Experimental MVP winner models have been evaluated at January, February, and March cutoffs, including a new 2025–26 holdout; the simple baseline beat the learned model on that holdout, so neither is deployed. A read-only dashboard loads the bundled historical scenario. Possession-level RAPM, detailed lineup compatibility, and calibrated roster/injury uncertainty remain future work.
 
 ## Research and results
 
-Read [research decisions](docs/PLAYER_MODEL_RESEARCH.md), [ordered implementation prompts](docs/IMPLEMENTATION_PROMPTS.md), [execution record](docs/EXECUTION_LOG.md), and the [model card](docs/MODEL_CARD.md).
+Start with the [portfolio release and CV evidence](docs/PORTFOLIO_RELEASE.md). The [model card](docs/MODEL_CARD.md), [execution record](docs/EXECUTION_LOG.md), [research decisions](docs/PLAYER_MODEL_RESEARCH.md), and [ordered implementation prompts](docs/IMPLEMENTATION_PROMPTS.md) provide the detailed methods and limitations.
 
 The first player-aware experiment used 254,513 player appearances across ten seasons. On the held-out 2024-25 season, the validation-selected hybrid achieved log loss 0.6011 versus 0.6026 for the team-only logistic baseline. This small improvement was not statistically conclusive in an approximate weekly-block check. Rolling standings error did not improve. The age-aware next-season scoring model improved its held-out error, while other development targets had mixed results.
 
@@ -56,13 +56,13 @@ The baseline January 2025 scenario's nominal 90% outcome-only intervals covered 
 
 ## Scenario dashboard
 
-With the local versioned artifact available, run the read-only dashboard:
+Run the read-only dashboard; its small historical example is included in the repository:
 
 ```powershell
 .venv/Scripts/python.exe -m streamlit run dashboard/app.py
 ```
 
-It loads a selected scenario directory and displays simulated standings, win intervals, actual wins, assumptions, and limitations. It never retrains or changes model artifacts.
+It loads the bundled `examples/2025-01-01-scenario/` by default, or a selected local versioned scenario directory. It displays simulated standings, win intervals, actual wins, assumptions, and limitations. It never retrains or changes model artifacts. To verify the numerical portfolio claims against the local full experiment artifacts, run `.venv/Scripts/python.exe -m scripts.verify_portfolio_evidence`.
 
 ## Structure
 

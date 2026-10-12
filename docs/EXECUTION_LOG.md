@@ -1,5 +1,12 @@
 # Execution log
 
+## 2026-10-12 — portfolio release audit
+
+- Added a bundled, read-only 2025-01-01 historical scenario example and validated its 30-team schema, win conservation, MAE, and interval coverage. The dashboard now opens this example from a fresh clone.
+- Added `scripts.verify_portfolio_evidence` to recompute held-out game log loss, reconcile multi-cutoff summary metrics, check the saved scenario and bundled copy, and confirm the independent MVP holdout result. Documented verified CV numbers and the unresolved baseline/roster/schedule limitations in `docs/PORTFOLIO_RELEASE.md`.
+- This is a portfolio release of an experimental forecasting pipeline, not promotion of the player-aware model or a live/preseason projection.
+- Release audit, 12 focused tests, source compilation, and dashboard AppTest smoke check passed. The AppTest loaded the bundled example without application errors and displayed the four headline metrics and standings table. Legacy tests that overwrite saved models were not run.
+
 ## 2026-10-12 — independent 2025–26 MVP holdout
 
 - Audited cached 2025–26 logs: 1,230 regular-season games, 2,460 team-game rows, 26,651 player-game rows, 582 players, and 82 games per team. Player and team dates/points reconcile. The cache was retrieved 2026-09-22; the separate 2026–27 schedule failure does not affect these logs.
